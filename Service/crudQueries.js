@@ -1,35 +1,4 @@
 'use strict';
-var CONFIG = require('../Config'),
-    mailVerification = require('./mailVerification'),
-    MODEL = require('../Model');
-
-var userEnter = function (name,password,email,phoneNo){
-    var tokendata = {
-        email : email
-    };
-    MODEL.userDetailsModel({
-        name: name,
-        password: CONFIG.CRYPTO.encrypt(password),
-        email : email,
-        phoneNo : phoneNo,
-        token : CONFIG.USER_DATA.cipherToken(tokendata)
-    }).save(function(err,data){
-        if(err)
-            console.log(err);
-        else {
-            mailVerification.sendLink(email, CONFIG.USER_DATA.cipherToken(tokendata))
-            console.log('success', data);
-        }
-    })
-};
-
-var userLogin = function(id,name,password){
-
-    MODEL.userDetailsModel.find(
-        {name : name},
-        {password : password}
-    )
-    };
 
 var saveData = function(model,data,callback){
     new model(data).save(function(err,result){
@@ -45,6 +14,17 @@ var saveData = function(model,data,callback){
 var getData = function (model, query, projection, options, callback) {
 
     model.find(query, projection, options, function (err, data) {
+        if (err) {
+            console.log("Get Data", err);
+            return callback(err);
+        }
+        return callback(null, data);
+    });
+};
+
+var findOne = function (model, query, projection, options, callback) {
+
+    model.findOne(query, projection, options, function (err, data) {
         if (err) {
             console.log("Get Data", err);
             return callback(err);
@@ -91,11 +71,10 @@ var getDataWithReference = function (model, query, projection, options, collecti
 };
 
 module.exports = {
-    userEnter : userEnter,
-    userLogin : userLogin,
     saveData : saveData,
     getData : getData,
     update : update,
+    findOne: findOne,
     getOneData : getOneData,
     getDataWithReference : getDataWithReference
 }

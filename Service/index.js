@@ -1,5 +1,6 @@
 'use strict';
 
 module.exports = {
-    crudQueries : require('./crudQueries')
+    crudQueries : require('./crudQueries'),
+    mailVerification : require('./mailVerification')
 }

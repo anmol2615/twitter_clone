@@ -6,24 +6,19 @@
 var Joi = require('joi'),
     controller = require('../Controllers/userController');
 
-/*
-{
-response:{
-message:"",
-data:{tweets:[]}
-},
-statusCode:200/201/400
-}
-*/
 var loginRoute = {
     method:'POST',
-    path:'/v1/Login/',
+    path:'/v1/Login',
     handler : function(request,reply) {
         controller.userLoginLogic(request.payload.name, request.payload.password, function (err, result) {
-            if (err)
-                reply(err)
+            if(err)
+            {
+                reply(err.response).code(err.statusCode);
+            }
             else
-                reply('Logged in').header('loginToken',result)
+            {
+                reply(result.response).code(result.statusCode);
+            }
         })
     },
     config:{

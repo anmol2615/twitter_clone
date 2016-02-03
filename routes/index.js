@@ -7,5 +7,6 @@ module.exports=[
     require('./userLogout'),
     require('./displayTweets'),
     require('./tweet'),
-    require('./follow')
+    require('./editProfileRoute'),
+    require('./followUnfollow')
 ]

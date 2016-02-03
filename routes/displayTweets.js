@@ -15,18 +15,22 @@ var displayTweets = {
                 auth : Joi.string().required().description("loginToken"),
                 field : Joi.string().required().allow('Ascending','Descending')
             }
-        }
+        },
+        plugins:{
+            'hapi-swagger':{
+                payloadType:"form"
+            }}
     },
     handler:function(request,reply)
     {
         controller.displayTweets(request.params.auth,request.params.field,function(err,result){
             if(err)
             {
-                reply(err)
+                reply(err.response).code(err.statusCode);
             }
             else
             {
-                reply(result);
+                reply(result.response).code(result.statusCode);
             }
         })
     }

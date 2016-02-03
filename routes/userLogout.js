@@ -10,9 +10,13 @@ var logoutRoute = {
     {
         controller.userLogoutLogic(request.params.token,function(err,result){
             if(err)
-            reply(err)
+            {
+                reply(err.response).code(err.statusCode);
+            }
             else
-            reply('Logout successful')
+            {
+                reply(result.response).code(result.statusCode);
+            }
         })
     },
     config:{
@@ -22,7 +26,11 @@ var logoutRoute = {
             params:{
                 token: Joi.string().required()
             }
-        }
+        },
+        plugins:{
+            'hapi-swagger':{
+                payloadType:"form"
+            }}
     }
 }
 

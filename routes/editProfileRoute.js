@@ -3,11 +3,11 @@
 var Joi = require('joi'),
     controller = require('../Controllers/userController');
 
-var userTweet = {
-    method : 'POST',
-    path : '/Tweet',
+var editProfileRoute = {
+    method : 'PUT',
+    path : '/edit',
     handler : function(request,reply) {
-        controller.tweetLogic(request.headers.auth,request.payload.tweet,request.payload.visibility,
+        controller.editProfile(request.headers.auth,request.payload,
             function(err,result){
                 if(err)
                 {
@@ -17,7 +17,7 @@ var userTweet = {
                 {
                     reply(result.response).code(result.statusCode);
                 }
-        })
+            })
     },
     config : {
         tags : ['api'],
@@ -26,14 +26,11 @@ var userTweet = {
                 auth : Joi.string().required()
             }).options({ allowUnknown: true }),
             payload: {
-                tweet: Joi.string().min(1).max(160).required(),
-                visibility : Joi.allow('Public','Private').required()
+                name: Joi.string(),
+                password : Joi.string(),
+                email :  Joi.string(),
+                phoneNo: Joi.string()
             }
-            //,
-            //failAction :{ function(request,reply,source,error){
-            //    console.log('hello');
-            //}
-            //}
         },
         plugins:{
             'hapi-swagger':{
@@ -41,8 +38,8 @@ var userTweet = {
             }}
 
     }
-}
+};
 
 module.exports = [
-    userTweet
+    editProfileRoute
 ]

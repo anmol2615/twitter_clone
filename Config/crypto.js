@@ -3,7 +3,7 @@
 
 var crypto = require('crypto'),
     CONFIG = require('../Config/userData'),
-    KEY = CONFIG.PRIVATEKEY,
+    KEY = CONFIG.PRIVATE_KEY,
     algorithm = 'aes-256-ctr';
 
 //var privateKey = Config.key.privateKey;

@@ -5,27 +5,31 @@ var Joi = require('joi'),
 
 var registerRoute = {
     method:'POST',
-    path:'/v1/register/{name}/{email}/{password}/{phoneNo}',
+    path:'/v1/register',
     handler : function (request,reply)
     {
-        controller.saveUser(request.params.name , request.params.password,request.params.email,request.params.phoneNo,function(err,result){
+        controller.userRegistrationLogic(request.payload.name , request.payload.password,request.payload.email,request.payload.phoneNo,function(err,result){
             if(err)
-            reply(err)
+            reply(err.response).code(error.statusCode);
             else
-            reply('You are now registered')
+            reply(result.response).code(result.statusCode);
         });
     },
     config:{
         tags:['api','register'],
         validate:{
-            params:{
-                name : Joi.string().required().description("USERNAME"),
-                email : Joi.string().required().description('Email'),
-                password : Joi.string().required().description("PASSWORD"),
-                phoneNo : Joi.string().required().description('Contact no.')
+            payload:{
+                name : Joi.string().required(),
+                email : Joi.string().required(),
+                password : Joi.string().required(),
+                phoneNo : Joi.string().required()
 
             }
-        }
+        },
+        plugins:{
+            'hapi-swagger':{
+                payloadType:"form"
+            }},
     }
 };
 var clickToVerify = {
@@ -36,9 +40,13 @@ var clickToVerify = {
       controller.clickToVerify(request.params.token,function(err,result)
       {
           if(err)
-          reply(err)
+          {
+              reply(err.response).code(err.statusCode);
+          }
           else
-          reply(result)
+          {
+              reply(result.response).code(result.statusCode);
+          }
       })
     }
 }
