@@ -8,6 +8,7 @@ var async = require('async'),
     responseObject = CONFIG.USER_DATA.responseObject,
     ERROR_RESPONSE = CONFIG.RESPONSE_MESSAGES.ERROR_MESSAGES,
     SUCCESS_RESPONSE = CONFIG.RESPONSE_MESSAGES.SUCCESS_MESSAGES,
+    STATUS_CODE = CONFIG.CONSTANTS.STATUS_CODE,
     SWAGGER_RESPONSE = CONFIG.RESPONSE_MESSAGES.SWAGGER_DEFAULT_RESPONSE_MESSAGES,
     Service = require('../Service');
 //---------------------------------------------------------------------------------
@@ -44,7 +45,7 @@ var userRegistrationLogic = function(name,password,email,phoneNo,callbackuserReg
                 {},SWAGGER_RESPONSE[1].code));
         }
     })
-}
+};
 /*--------------------------------------------------------------------------------
 *                                   CLICK TO VERIFY
 * --------------------------------------------------------------------------------
@@ -54,15 +55,14 @@ var clickToVerify = function(token,callbackUserRegister)
     Service.crudQueries.update(MODEL.userDetailsModel,{token : token},{$set : {isVerified:true}},{lean:true},function(err, result){
         if(err)
         return callbackUserRegister(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-        SWAGGER_RESPONSE[6].code))
+        SWAGGER_RESPONSE[6].code));
         else
         {
-            console.log(result);
             return callbackUserRegister(null,responseObject(SUCCESS_RESPONSE.EMAIL_VERIFIED,{},
         SWAGGER_RESPONSE[0].code))}
     })
 
-}
+};
 /*--------------------------------------------------------------------------------
  *                                   USER LOGIN
  * --------------------------------------------------------------------------------
@@ -71,8 +71,8 @@ var userLoginLogic = function(name,password,callbackUserLogin) {
     var encryptedPassword = CONFIG.CRYPTO.encrypt(password);
     async.waterfall([
         function(callback){
-            Service.crudQueries.findOne(MODEL.userDetailsModel,
-                {name : name, password:encryptedPassword,isVerified : true},{},{lean:true},
+            Service.crudQueries.findOneWithLimit(MODEL.userDetailsModel,
+                {name : name, password:encryptedPassword,isVerified : true, isDeleted:false},{},{lean:true},
                 function(err,result) {
                     if (err) {
                         return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
@@ -91,7 +91,7 @@ var userLoginLogic = function(name,password,callbackUserLogin) {
         },function(result,callback){
             Service.crudQueries.update(MODEL.userDetailsModel,
                 {name : name, password:encryptedPassword,isVerified : true},
-                {$set: {loginToken: CONFIG.USER_DATA.cipherToken(result._id)}},
+                {$set: {loginToken: CONFIG.USER_DATA.cipherToken(result[0]._id)}},
                 function(err,result) {
                     if (err) {
                         return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
@@ -121,7 +121,7 @@ var userLoginLogic = function(name,password,callbackUserLogin) {
 
 var userLogoutLogic = function(token,callbackUserLogout){
     Service.crudQueries.update(MODEL.userDetailsModel,
-        {loginToken : token},
+        {loginToken : token, isDeleted : false},
         {$unset : {loginToken : 1}},
         {lean:true},
         function(err,result)
@@ -170,7 +170,7 @@ var tweetLogic = function(token,tweet,visibility,callbackUserTweet){
                 id: result[0]._id,
                 tweet: tweet,
                 visibility : visibility,
-                timestamp: Date.now(),
+                timestamp: Date.now()
             }, function(err,result){
                 if(err)
                 callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
@@ -185,7 +185,7 @@ var tweetLogic = function(token,tweet,visibility,callbackUserTweet){
         }
         else {
             return callbackUserTweet(null,responseObject(SUCCESS_RESPONSE.TWEETED,tweet,
-            SWAGGER_RESPONSE[1].code))
+            SWAGGER_RESPONSE[1].code));
         }
     })
 }
@@ -232,10 +232,10 @@ var displayTweets = function(token,field,callbackDisplayRoute)
                 {path:'id',select:'name'},function(err,result){
                     if(err)
                     callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                    SWAGGER_RESPONSE[6].code))
+                    SWAGGER_RESPONSE[6].code));
                     else
                     callback(null,responseObject(SWAGGER_RESPONSE[0].message,result,
-                    SWAGGER_RESPONSE[0].code))
+                    SWAGGER_RESPONSE[0].code));
                 })
         }
     ],function(err,result){
@@ -279,7 +279,7 @@ var followSomeoneLogic = function(token,name,callbackfollowSomeone) {
         },
         function(result,callback){
             Service.crudQueries.getOneData(MODEL.userDetailsModel,
-                {name : name},
+                {name : name , isDeleted : false},
                 {$addToSet : {followers : result[0]._id}},
                 {lean : true},
                 function(err,result){
@@ -352,7 +352,7 @@ var unfollowSomeoneLogic = function(token,name,callbackunfollowSomeone) {
         },
         function(result,callback){
             Service.crudQueries.getOneData(MODEL.userDetailsModel,
-                {name : name},
+                {name : name, isDeleted:false},
                 {$pull : {followers : result[0]._id}},
                 {lean : true},
                 function(err,result){
@@ -404,15 +404,15 @@ var editProfile = function(token,payload,callbackEditProfile){
     async.waterfall([
         function(callback) {
             if(payload.email){
-                Service.crudQueries.update(MODEL.userDetailsModel, {loginToken: token},
-                {$set : payload,isVerified:false}, {lean: true}, function (err, result) {
+                Service.crudQueries.update(MODEL.userDetailsModel, {loginToken: token, isDeleted: false},
+                {$set : payload,isVerified:false,token:CONFIG.USER_DATA.cipherToken(payload.email)}, {lean: true}, function (err, result) {
                     if (err)
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
                         SWAGGER_RESPONSE[6].code));
                     else {
                         if(result.n) {
                             Service.mailVerification.sendLink(payload.email,CONFIG.USER_DATA.cipherToken(payload.email));
-                        callback(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,{},
+                        callback(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,payload.email,
                         SWAGGER_RESPONSE[0].code));
                         }
                         else
@@ -455,15 +455,15 @@ var editProfile = function(token,payload,callbackEditProfile){
  **/
 var seeProfile = function(token,name,callbackDisplayRoute) {
     async.auto({
-        function (callback) {
-            Service.crudQueries.findOne(MODEL.userDetailsModel,
+        authorize:  function (callback) {
+                Service.crudQueries.getData(MODEL.userDetailsModel,
                 {loginToken: token},
                 {_id: 0, following: 1},
                 {lean: true},
                 function (err, result) {
                     if (err) {
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
-                            SWAGGER_RESPONSE[6].code));
+                            CONFIG.CONSTANTS.STATUS_CODE.SERVER_ERROR));
                     }
                     else {
                         if (result) {
@@ -476,31 +476,41 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
                     }
                 })
         },
-        searchUser: function (result, callback) {
-            Service.crudQueries.findOne(MODEL.userDetailsModel,
-                {name: name},
-                {_id: 1},
-                {lean: true},
-                function (err, result) {
-                    if (err) {
-                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
-                            SWAGGER_RESPONSE[6].code));
-                    }
-                    else {
-                        if (result) {
-                            callback(null, result);
+        searchUser: ['authorize',function (callback,result) {
+            if(result.authorize.length){
+                Service.crudQueries.findOne(MODEL.userDetailsModel,
+                    {name: name},
+                    {_id: 1,following:1,followers:1},
+                    {lean: true},
+                    function (err, result) {
+                        if (err) {
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                                SWAGGER_RESPONSE[6].code));
                         }
                         else {
-                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
-                                SWAGGER_RESPONSE[4].code))
+                            if (result) {
+                                result.noOfFollowers = result.followers.length;
+                                result.noOfFollowing = result.following.length;
+                                callback(null,result);
+                            }
+                            else {
+                                callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND, {},
+                                    STATUS_CODE.NOT_FOUND))
+                            }
                         }
-                    }
-                })
-        },
-        ifInFollowing: ['searchUser', function (result, callback) {
-            Service.crudQueries.findOne(MODEL.twitterModel,
+                    })
+                }
+            else {
+                callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                    SWAGGER_RESPONSE[4].code))
+
+            }
+        }],
+        ifInFollowing: ['searchUser', function (callback, result) {
+            var userInfo = result.searchUser;
+            Service.crudQueries.getData(MODEL.twitterModel,
                 {id: result.searchUser._id},
-                {_id: 0, id: 0, tweet: 1, timestamp: 1},
+                {_id: 0, id:1, tweet: 1, timestamp: 1},
                 {lean: true},
                 function (err, result) {
                     if (err) {
@@ -509,7 +519,8 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
                     }
                     else {
                         if (result) {
-                            callback(null, responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE, result,
+                            callback(null, responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE,{USER_DETAILS: userInfo,
+                                TWEETS : result},
                                 SWAGGER_RESPONSE[0].code));
                         }
                         else {
@@ -524,7 +535,7 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
             return callbackDisplayRoute(err)
         }
         else {
-            return callbackDisplayRoute(null, result)
+            return callbackDisplayRoute(null, result.ifInFollowing)
         }
     })
 };

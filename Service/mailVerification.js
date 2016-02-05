@@ -14,9 +14,14 @@ var smtpTransport = nodemailer.createTransport("SMTP", {
 
 
 var anmolemail="anmol2615@gmail.com";
-var sendLink = function(user,token) {
+var sendLink = function(user,token,scope) {
     var from = " Anmol<"+anmolemail+">";
     var to =  user;
+    if(scope)
+    {
+        var mailbody = "<p> hello Thanks for Registering! Please verify your email by clicking on the verification link below.<br/> <a href='http://localhost:"+ CONFIG.SERVERCONFIG.PORT.LIVE+"/"+ CONFIG.USER_DATA.adminVerify +"/"+token+"'>Verification Link</a></p>";
+    }
+    else
     var mailbody = "<p> hello Thanks for Registering! Please verify your email by clicking on the verification link below.<br/> <a href='http://localhost:"+ CONFIG.SERVERCONFIG.PORT.LIVE+"/"+ CONFIG.USER_DATA.verifyLink +"/"+token+"'>Verification Link</a></p>";
     mail(from, to , "Account Verification", mailbody);
 };

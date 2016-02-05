@@ -1,13 +1,16 @@
+/**
+ * Created by anmol on 3/2/16.
+ */
 'use strict';
 
 var Joi = require('joi'),
-    controller = require('../Controllers/userController');
+    controller = require('../../Controllers/userController');
 
-var editProfileRoute = {
-    method : 'PUT',
-    path : '/edit',
+var seeProfileRoute = {
+    method : 'GET',
+    path : '/seeProfile/{name}',
     handler : function(request,reply) {
-        controller.editProfile(request.headers.auth,request.payload,
+        controller.seeProfile(request.headers.auth,request.params.name,
             function(err,result){
                 if(err)
                 {
@@ -25,11 +28,8 @@ var editProfileRoute = {
             headers : Joi.object({
                 auth : Joi.string().required()
             }).options({ allowUnknown: true }),
-            payload: {
-                name: Joi.string(),
-                password : Joi.string(),
-                email :  Joi.string(),
-                phoneNo: Joi.string()
+            params: {
+                name: Joi.string()
             }
         },
         plugins:{
@@ -41,5 +41,5 @@ var editProfileRoute = {
 };
 
 module.exports = [
-    editProfileRoute
+    seeProfileRoute
 ]

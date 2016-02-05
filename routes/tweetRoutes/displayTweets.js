@@ -1,7 +1,7 @@
 'use strict';
 
 const Joi = require('joi');
-var controller = require('../Controllers/userController');
+var controller = require('../../Controllers/userController');
 
 var displayTweets = {
     method:'GET',

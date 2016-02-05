@@ -3,5 +3,6 @@
 module.exports = {
     userDetailsModel : require('./userDetailsModel'),
     twitterModel : require('./twitterModel'),
-    arrayModel : require('./arrayModel')
+    arrayModel : require('./arrayModel'),
+    adminModel : require('./adminModel')
 };

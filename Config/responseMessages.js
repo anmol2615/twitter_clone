@@ -40,6 +40,7 @@ const ERROR_MESSAGES = {
     'PHONE_NUMBER_NOT_EXISTS': 'Phone number does not exists.',
     'PHONE_NUMBER_NOT_FOUND': "Couldn't find the phone number.",
     'SP_NOT_RANGE': 'No Service provider in range',
+    'TWEET_NOT_FOUND':'No such tweet.',
     'SERVICE_PROVIDER_BOOKED_ALREADY': 'Service provider already booked.',
     'EMAIL_ALREADY_EXISTS': 'Email already exists.',
     'EMPLOYEE_NOT_AVAIL': 'Oops! It seems no one is available.',
@@ -117,6 +118,9 @@ const SUCCESS_MESSAGES = {
     'SUB_SERVICE_ADDED': 'Sub-service added.',
     'SERVING_LOCATION_ADDED': 'Serving Location added.',
     'BOOKING_CREATED': 'Booking created successfully.',
+    'DELETED' : 'Deleted.',
+    'NO_FOLLOWERS' : 'The user is not following anyone',
+    'NOT_FOLLOWING_ANYONE' : 'The user isn\'t following anyone',
     'ATTACHMENT_UPLOAD': 'Attachment Uploaded successfully.'
 };
 

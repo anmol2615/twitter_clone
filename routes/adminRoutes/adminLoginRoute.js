@@ -1,16 +1,16 @@
 /**
- * Created by anmol on 14/1/16.
+ * Created by anmol on 3/2/16.
  */
 'use strict';
 
 var Joi = require('joi'),
-    controller = require('../Controllers/userController');
+    controller = require('../../Controllers/adminController');
 
-var loginRoute = {
+var adminLoginRoute = {
     method:'POST',
-    path:'/v1/Login',
+    path:'/admin/Login',
     handler : function(request,reply) {
-        controller.userLoginLogic(request.payload.name, request.payload.password, function (err, result) {
+        controller.adminLoginLogic(request.payload.name, request.payload.password, function (err, result) {
             if(err)
             {
                 reply(err.response).code(err.statusCode);
@@ -31,12 +31,12 @@ var loginRoute = {
         },
         plugins:{
             'hapi-swagger':{
-            payloadType:"form"
-        }}
+                payloadType:"form"
+            }}
 
     }
 }
 
 module.exports = [
- loginRoute
+    adminLoginRoute
 ]

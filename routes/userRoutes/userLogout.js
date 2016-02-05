@@ -1,7 +1,7 @@
 'use strict';
 
 var Joi = require('joi'),
-    controller = require('../Controllers/userController');
+    controller = require('../../Controllers/userController');
 
 var logoutRoute = {
     method : 'GET',

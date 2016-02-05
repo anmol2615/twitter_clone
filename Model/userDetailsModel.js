@@ -11,6 +11,7 @@ var user = new mongoose.Schema({
     email: {type :String},
     phoneNo: {type : String},
     token : {type : String},
+    isDeleted : {type: Boolean, default:false},
     isVerified :{type:Boolean, default :false},
     loginToken : {type:String,unique:true,sparse:true},
     followers : {type : Array },

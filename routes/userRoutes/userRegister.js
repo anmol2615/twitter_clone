@@ -1,7 +1,7 @@
 'use strict';
 
 var Joi = require('joi'),
-    controller = require('../Controllers/userController');
+    controller = require('../../Controllers/userController');
 
 var registerRoute = {
     method:'POST',
@@ -49,7 +49,7 @@ var clickToVerify = {
           }
       })
     }
-}
+};
 module.exports = [
      registerRoute,
      clickToVerify

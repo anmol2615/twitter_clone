@@ -22,6 +22,17 @@ var getData = function (model, query, projection, options, callback) {
     });
 };
 
+var findOneWithLimit = function (model, query, projection, options, callback) {
+
+    model.find(query, projection, options, function (err, data) {
+        if (err) {
+            console.log("Get Data", err);
+            return callback(err);
+        }
+        return callback(null, data);
+    }).limit(1);
+};
+
 var findOne = function (model, query, projection, options, callback) {
 
     model.findOne(query, projection, options, function (err, data) {
@@ -75,6 +86,7 @@ module.exports = {
     getData : getData,
     update : update,
     findOne: findOne,
+    findOneWithLimit : findOneWithLimit,
     getOneData : getOneData,
     getDataWithReference : getDataWithReference
 }

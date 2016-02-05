@@ -24,7 +24,12 @@ var decipherToken = function (token) {
     };
 
 var verifyLink = 'verify_email_link';
+var adminVerify = 'admin_verify';
 
+const ADMIN_CLASS = {
+    ADMIN : 'admin',
+    SUPER_ADMIN : 'superAdmin'
+}
 module.exports = {
     cipherToken: cipherToken,
     decipherToken: decipherToken,
@@ -33,5 +38,7 @@ module.exports = {
     isLoggedIn : isLoggedIn,
     verifyLink : verifyLink,
     options : options,
-    responseObject : responseObject
+    responseObject : responseObject,
+    ADMIN_CLASS: ADMIN_CLASS,
+    adminVerify : adminVerify
 }

@@ -1,0 +1,484 @@
+/**
+ * Created by anmol on 3/2/16.
+ */
+'use strict';
+
+var async = require('async'),
+    MODEL = require('../Model'),
+    CONFIG = require('../Config'),
+    Jwt = require('jsonwebtoken'),
+    orderOfDisplayingTweets = CONFIG.USER_DATA.options,
+    responseObject = CONFIG.USER_DATA.responseObject,
+    ERROR_RESPONSE = CONFIG.RESPONSE_MESSAGES.ERROR_MESSAGES,
+    SUCCESS_RESPONSE = CONFIG.RESPONSE_MESSAGES.SUCCESS_MESSAGES,
+    SWAGGER_RESPONSE = CONFIG.RESPONSE_MESSAGES.SWAGGER_DEFAULT_RESPONSE_MESSAGES,
+    STATUS_CODE = CONFIG.CONSTANTS.STATUS_CODE,
+    Service = require('../Service');
+//---------------------------------------------------------------------------------
+//                                    SAVE USER
+//---------------------------------------------------------------------------------
+var adminRegister = function(name,password,email,phoneNo,scope,callbackAdminRegister)
+{
+    async.waterfall([
+        function(callback)
+        {
+            Service.crudQueries.saveData(MODEL.adminModel,{
+                adminName: name,
+                password : CONFIG.CRYPTO.encrypt(password),
+                email : email,
+                phoneNo : phoneNo,
+                scope:scope,
+                token: CONFIG.USER_DATA.cipherToken(email)
+            },callback)
+        }
+    ],function(err,result){
+        if(err){
+            if(err.code === 11000) {
+                return callbackAdminRegister(responseObject(ERROR_RESPONSE.USERNAME_ALREADY_EXISTS,
+                    result,SWAGGER_RESPONSE[5].code))
+            }
+            return callbackAdminRegister(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                SWAGGER_RESPONSE[6].code));
+        }
+        else {
+            Service.mailVerification.sendLink(email,CONFIG.USER_DATA.cipherToken(email),scope);
+            return callbackAdminRegister(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,
+                {},SWAGGER_RESPONSE[1].code));
+        }
+    })
+};
+//---------------------------------------------------------------------------------
+//                                    CLICK_TO_VERIFY
+//---------------------------------------------------------------------------------
+var clickToVerify = function(token,callbackAdminRegister)
+{
+    Service.crudQueries.getOneData(MODEL.adminModel,{token : token},{$set : {isVerified:true}},{lean:true},function(err, result){
+        if(err)
+            return callbackAdminRegister(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                SWAGGER_RESPONSE[6].code));
+        else
+        {
+            console.log(result);
+            return callbackAdminRegister(null,responseObject(SUCCESS_RESPONSE.EMAIL_VERIFIED,{},
+                SWAGGER_RESPONSE[0].code))}
+    })
+
+};
+
+//---------------------------------------------------------------------------------
+//                                    ADMIN_LOGIN
+//---------------------------------------------------------------------------------
+var adminLoginLogic = function(name,password,callbackAdminLogin) {
+    var encryptedPassword = CONFIG.CRYPTO.encrypt(password);
+    async.waterfall([
+        function(callback){
+            Service.crudQueries.getData(MODEL.adminModel,
+                {adminName : name, password:encryptedPassword,isVerified : true},{_id:1},{lean:true},
+                function(err,result) {
+                    if (err) {
+                        return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
+                            SWAGGER_RESPONSE[6].code));
+                    }
+                    else {
+                        if(result)
+                            return callback(null,result);
+                        else
+                        {
+                            return callback(responseObject(ERROR_RESPONSE.ACCESS_DENIED,result,
+                                SWAGGER_RESPONSE[3].code));}
+
+                    }
+                })
+        },function(result,callback){
+            Service.crudQueries.update(MODEL.adminModel,
+                {adminName : name, password:encryptedPassword,isVerified : true},
+                {$set: {loginToken: CONFIG.USER_DATA.cipherToken(result[0]._id)}},
+                function(err,result) {
+                    if (err) {
+                        return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
+                            SWAGGER_RESPONSE[6].code));
+                    }
+                    else {
+                        if(result.n)
+                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,result,
+                                SWAGGER_RESPONSE[0].code));
+                        else
+                            return callback(responseObject(ERROR_RESPONSE.USER_ALREADY_LOGGED_IN,{},
+                                SWAGGER_RESPONSE[5].code));
+
+                    }
+                })
+        }],function(err,result){
+        if(err)
+            callbackAdminLogin(err);
+        else
+            callbackAdminLogin(null,result);
+    })
+};
+//---------------------------------------------------------------------------------
+//                                    ADMIN_LOGOUT
+//---------------------------------------------------------------------------------
+var adminLogoutLogic = function(token,callbackLogoutLogic){
+    Service.crudQueries.update(MODEL.adminModel,
+        {loginToken : token},
+        {$unset : {loginToken : 1}},
+        {lean:true},
+        function(err,result)
+        {
+            if(err)
+                return callbackLogoutLogic (responseObject(SWAGGER_RESPONSE[6].message,{},
+                    SWAGGER_RESPONSE[6].code));
+            else{
+                if(result.n)
+                    return callbackLogoutLogic(null,responseObject(SUCCESS_RESPONSE.LOGOUT_SUCCESSFULLY,{},
+                        SWAGGER_RESPONSE[0].code));
+                return callbackLogoutLogic(null,responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                    SWAGGER_RESPONSE[2].code));
+            }
+        })
+};
+//---------------------------------------------------------------------------------
+//                                    SEE_USER_PROFILE
+//---------------------------------------------------------------------------------
+var seeUserProfile = function(token,name,callbackRoute)
+{
+    async.auto({
+        authorize : function(callback)
+        {
+            Service.crudQueries.findOneWithLimit(MODEL.adminModel,
+                {loginToken : token},
+                {},
+                {lean : true},
+                function(err,result){
+                    if(err) {
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            SWAGGER_RESPONSE[6].code));
+                    }
+                    else
+                    {
+
+                        if(result.length)
+                        {
+                            callback(null,result);
+                        }
+                        else
+                        {
+                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                                SWAGGER_RESPONSE[4].code))
+                        }
+                    }
+                })
+        },
+        getUser : ['authorize',function(callback,result){
+            Service.crudQueries.findOneWithLimit(MODEL.userDetailsModel,
+                {name : name},
+                {password:0},
+                {lean : true},function(err,result){
+                    if(err)
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR));
+                    else
+                    {
+                        if(result.length)
+                        {
+                            callback(null,result)
+                        }
+                        else
+                        {
+                            callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
+                        STATUS_CODE.NOT_FOUND))}
+                    }
+                })
+        }],
+        getTweetsToo : ['getUser',function(callback,result){
+            Service.crudQueries.getData(MODEL.twitterModel,
+                {id : result.getUser[0]._id},
+                {},
+                {lean : true},function(err,result){
+                    if(err)
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR))
+                    else
+                    {
+                        callback(null,result);
+                    }
+                })
+        }
+    ]},
+        function(err,result){
+            if(err)
+        {
+            return callbackRoute(err)
+        }
+        else
+        {
+            return callbackRoute(null,responseObject(SWAGGER_RESPONSE[0].message,{USER_INFO : result.getUser[0],
+            TWEETS : result.getTweetsToo},STATUS_CODE.OK))
+        }
+    })
+};
+//---------------------------------------------------------------------------------
+//                                    EDIT_SOME_USER
+//---------------------------------------------------------------------------------
+var editUserProfile = function(token,payload,callbackEditProfile){
+    async.waterfall([
+        function(callback){
+            Service.crudQueries.findOneWithLimit(MODEL.adminModel,{loginToken : token},
+                {},
+                {lean:true},function(err,result){
+                    if(err)
+                    callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                    STATUS_CODE.SERVER_ERROR));
+                    else
+                    {
+                        if(result.length)
+                        callback(null,result);
+                        else
+                        callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                        STATUS_CODE.SERVER_ERROR))
+                    }
+                })
+        },
+        function(result,callback) {
+            if(payload.email){
+                Service.crudQueries.update(MODEL.userDetailsModel, {name: payload.searchName, isDeleted: false},
+                    {$set : payload,isVerified:false,token:CONFIG.USER_DATA.cipherToken(payload.email)}, {lean: true}, function (err, result) {
+                        if (err)
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                SWAGGER_RESPONSE[6].code));
+                        else {
+                            if(result.n) {
+                                Service.mailVerification.sendLink(payload.email,CONFIG.USER_DATA.cipherToken(payload.email));
+                                callback(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,payload.email,
+                                    SWAGGER_RESPONSE[0].code));
+                            }
+                            else
+                                callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
+                                    STATUS_CODE.BAD_REQUEST))
+                        }
+
+                    });
+
+            }
+            else
+            {
+                Service.crudQueries.update(MODEL.userDetailsModel,{name:payload.searchName , isDeleted : false},
+                    {$set : payload},{lean:true}, function(err,result){
+                        if (err)
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                SWAGGER_RESPONSE[6].code));
+                        else {
+                            if(result.n) {
+                                callback(null, responseObject(SUCCESS_RESPONSE.DETAILS_UPDATED,{},
+                                    SWAGGER_RESPONSE[0].code));
+                            }
+                            else
+                                callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
+                                    STATUS_CODE.BAD_REQUEST))
+                        }
+                    })
+            }
+        }
+    ],function(err,result){
+        if(err)
+            callbackEditProfile(err);
+        else
+            callbackEditProfile(null,result);
+    })
+};
+//---------------------------------------------------------------------------------
+//                                    DELETE_TWEET
+//---------------------------------------------------------------------------------
+var deleteTweet = function(token,tweetId,callbackRoute)
+{
+    async.auto({
+            authorize : function(callback)
+            {
+                Service.crudQueries.findOneWithLimit(MODEL.adminModel,
+                    {loginToken : token},
+                    {},
+                    {lean : true},
+                    function(err,result){
+                        if(err) {
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                SWAGGER_RESPONSE[6].code));
+                        }
+                        else
+                        {
+
+                            if(result.length)
+                            {
+
+                                callback(null,result);
+                            }
+                            else
+                            {
+                                callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                                    SWAGGER_RESPONSE[4].code))
+                            }
+                        }
+                    })
+            },
+            deleteTweet : ['authorize',function(callback,result){
+                if(result.authorize.length){
+                Service.crudQueries.update(MODEL.twitterModel,
+                    {_id : tweetId},
+                    {$set : {isTweetDeleted : true}},
+                    {lean : true},function(err,result){
+                        if(err)
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                STATUS_CODE.SERVER_ERROR));
+                        else
+                        {
+                            if(result.n)
+                            {
+                                callback(null,responseObject(SUCCESS_RESPONSE.DELETED,{},
+                                STATUS_CODE.OK));
+                            }
+                            else
+                            {
+                                callback(responseObject(ERROR_RESPONSE.TWEET_NOT_FOUND,{},
+                                    STATUS_CODE.NOT_FOUND))}
+                        }
+                    })}
+                else
+                    callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
+                        STATUS_CODE.NOT_FOUND));
+            }]
+    },
+        function(err,result){
+            if(err)
+            {
+                return callbackRoute(err)
+            }
+            else
+            {
+                return callbackRoute(null,result.deleteTweet);
+            }
+        })
+};
+//---------------------------------------------------------------------------------
+//                                    DELETE_USER
+//---------------------------------------------------------------------------------
+var deleteUser = function(token,name,callbackRoute)
+{
+    async.auto({
+            authorize : function(callback)
+            {
+                Service.crudQueries.findOneWithLimit(MODEL.adminModel,
+                    {loginToken : token, scope : 'SUPER_ADMIN'},
+                    {_id:1},
+                    {lean : true},
+                    function(err,result){
+                        if(err) {
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                SWAGGER_RESPONSE[6].code));
+                        }
+                        else
+                        {
+
+                            if(result.length)
+                            {
+
+                                callback(null,result);
+                            }
+                            else
+                            {
+                                callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                                    SWAGGER_RESPONSE[4].code))
+                            }
+                        }
+                    })
+            },
+            deleteUser : ['authorize',function(callback,result){
+                if(result.authorize.length){
+                    Service.crudQueries.getOneData(MODEL.userDetailsModel,
+                        {name: name },
+                        {$set : {isDeleted : true},$unset : {loginToken:1}},
+                        {lean : true},function(err,result){
+                            if(err)
+                                callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                    STATUS_CODE.SERVER_ERROR));
+                            else
+                            {
+                                if(result)
+                                {
+                                    callback(null,responseObject(SUCCESS_RESPONSE.DELETED,result,
+                                        STATUS_CODE.OK));
+                                }
+                                else
+                                {
+                                    callback(responseObject(ERROR_RESPONSE.TWEET_NOT_FOUND,{},
+                                        STATUS_CODE.NOT_FOUND))}
+                            }
+                        })}
+                else
+                    callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
+                        STATUS_CODE.NOT_FOUND));
+            }],
+            deleteNameFromFollowing : ['deleteUser',function(callback,result){
+                    Service.crudQueries.update(MODEL.userDetailsModel,
+                        {following: {  $in : [result.deleteUser.response.data._id]}},
+                        {$pull : {following : result.deleteUser.response.data._id}},
+                        {lean : true , multi :true},function(err,result){
+                            if(err)
+                                callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                    STATUS_CODE.SERVER_ERROR));
+                            else
+                            {
+                                if(result.n)
+                                {
+                                    callback(null,responseObject(SUCCESS_RESPONSE.DELETED,{},
+                                        STATUS_CODE.OK));
+                                }
+                                else
+                                {
+                                    callback(null,responseObject(ERROR_RESPONSE.NO_FOLLOWERS,{},
+                                        STATUS_CODE.NOT_FOUND))}
+                            }
+                        })
+            }],
+            deleteNameFromFollowers : ['deleteUser',function(callback,result){
+                Service.crudQueries.update(MODEL.userDetailsModel,
+                    {followers: {  $in : [result.deleteUser.response.data._id]}},
+                    {$pull : {followers : result.deleteUser.response.data._id}},
+                    {lean : true , multi :true},function(err,result){
+                        if(err)
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                STATUS_CODE.SERVER_ERROR));
+                        else
+                        {
+                            if(result.n)
+                            {
+                                callback(null,responseObject(SUCCESS_RESPONSE.DELETED,{},
+                                    STATUS_CODE.OK));
+                            }
+                            else
+                            {
+                                callback(null,responseObject(ERROR_RESPONSE.NOT_FOLLOWING_ANYONE,{},
+                                    STATUS_CODE.NOT_FOUND))}
+                        }
+                    })
+            }]
+        },
+        function(err,result){
+            if(err)
+            {
+                return callbackRoute(err)
+            }
+            else
+            {
+                return callbackRoute(null,result.deleteUser);
+            }
+        })
+};
+module.exports = {
+    adminRegister: adminRegister,
+    clickToVerify : clickToVerify,
+    adminLoginLogic : adminLoginLogic,
+    adminLogoutLogic : adminLogoutLogic,
+    seeUserProfile : seeUserProfile,
+    deleteTweet: deleteTweet,
+    deleteUser:deleteUser,
+    editUserProfile : editUserProfile
+};
