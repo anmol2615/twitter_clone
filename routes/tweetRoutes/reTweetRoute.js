@@ -1,13 +1,17 @@
+/**
+ * Created by anmol on 2/9/16.
+ */
+
 'use strict';
 
 var Joi = require('joi'),
     controller = require('../../Controllers/userController');
 
-var editProfileRoute = {
-    method : 'PUT',
-    path : '/user/edit',
+var reTweetRoute = {
+    method : 'POST',
+    path : '/twitter/reTweet',
     handler : function(request,reply) {
-        controller.editProfile(request.headers.auth,request.payload,
+        controller.re_TweetLogic(request.headers.auth,request.payload,
             function(err,result){
                 if(err)
                 {
@@ -26,11 +30,14 @@ var editProfileRoute = {
                 auth : Joi.string().required()
             }).options({ allowUnknown: true }),
             payload: {
-                name: Joi.string(),
-                password : Joi.string(),
-                email :  Joi.string(),
-                phoneNo: Joi.string()
+                tweetid: Joi.string().required(),
+                visibility : Joi.valid(['Public','Private']).required()
             }
+            //,
+            //failAction :{ function(request,reply,source,error){
+            //    console.log('hello');
+            //}
+            //}
         },
         response : {
             options : {
@@ -38,13 +45,13 @@ var editProfileRoute = {
             },
             schema : {
                 message : Joi.string().required(),
-                data : {}
+         //       data : {}
             }
         }
 
     }
-};
+}
 
 module.exports = [
-    editProfileRoute
+    reTweetRoute
 ]

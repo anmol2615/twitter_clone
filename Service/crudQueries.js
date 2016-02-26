@@ -81,6 +81,15 @@ var getDataWithReference = function (model, query, projection, options, collecti
     });
 };
 
+var getCount = function (model, condition, callback) {
+    model.count(condition, function (error, count) {
+        if (error) {
+            logger.error("Error Get Count: ", error);
+            return callback(error);
+        }
+        return callback(null, count);
+    })
+};
 module.exports = {
     saveData : saveData,
     getData : getData,
@@ -88,5 +97,6 @@ module.exports = {
     findOne: findOne,
     findOneWithLimit : findOneWithLimit,
     getOneData : getOneData,
+    getCount : getCount,
     getDataWithReference : getDataWithReference
 }

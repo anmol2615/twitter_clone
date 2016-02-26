@@ -6,6 +6,8 @@ var twitterSchema = new mongoose.Schema({
     visibility : {type: String},
     isTweetDeleted : {type:Boolean , default:false},
     tweet : {type : String},
-    timestamp : {type: Date}
+    likedBy : {type : Array},
+    timestamp : {type: Date},
+    reTweetedFrom : {type:String , default:null}
 });
 module.exports = mongoose.model('twitterModel',twitterSchema);

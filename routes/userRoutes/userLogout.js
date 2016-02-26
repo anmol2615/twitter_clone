@@ -5,7 +5,7 @@ var Joi = require('joi'),
 
 var logoutRoute = {
     method : 'GET',
-    path : '/v1/logout/{token}',
+    path : '/user/logout/{token}',
     handler : function (request,reply)
     {
         controller.userLogoutLogic(request.params.token,function(err,result){
@@ -27,10 +27,15 @@ var logoutRoute = {
                 token: Joi.string().required()
             }
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }}
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : {}
+            }
+        }
     }
 }
 

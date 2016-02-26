@@ -2,8 +2,9 @@
 
 var async = require('async'),
     MODEL = require('../Model'),
+    fs= require('fs'),
     CONFIG = require('../Config'),
-    Jwt = require('jsonwebtoken'),
+    moment = require('moment'),
     orderOfDisplayingTweets = CONFIG.USER_DATA.options,
     responseObject = CONFIG.USER_DATA.responseObject,
     ERROR_RESPONSE = CONFIG.RESPONSE_MESSAGES.ERROR_MESSAGES,
@@ -26,6 +27,7 @@ var userRegistrationLogic = function(name,password,email,phoneNo,callbackuserReg
                 name: name,
                 password : CONFIG.CRYPTO.encrypt(password),
                 email : email,
+                timeOfRegistration : Date.now(),
                 phoneNo : phoneNo,
                 token: CONFIG.USER_DATA.cipherToken(tokenData)
             },callback)
@@ -34,15 +36,15 @@ var userRegistrationLogic = function(name,password,email,phoneNo,callbackuserReg
         if(err){
             if(err.code === 11000) {
             return callbackuserRegistration(responseObject(ERROR_RESPONSE.USERNAME_ALREADY_EXISTS,
-                {},SWAGGER_RESPONSE[5].code))
+                {},STATUS_CODE.ALREADY_EXISTS_CONFLICT))
             }
             return callbackuserRegistration(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                SWAGGER_RESPONSE[6].code));
+            STATUS_CODE.SERVER_ERROR));
         }
         else {
             Service.mailVerification.sendLink(email,CONFIG.USER_DATA.cipherToken(tokenData));
             return callbackuserRegistration(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,
-                {},SWAGGER_RESPONSE[1].code));
+                {},STATUS_CODE.CREATED));
         }
     })
 };
@@ -55,11 +57,11 @@ var clickToVerify = function(token,callbackUserRegister)
     Service.crudQueries.update(MODEL.userDetailsModel,{token : token},{$set : {isVerified:true}},{lean:true},function(err, result){
         if(err)
         return callbackUserRegister(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-        SWAGGER_RESPONSE[6].code));
+        STATUS_CODE.SERVER_ERROR));
         else
         {
             return callbackUserRegister(null,responseObject(SUCCESS_RESPONSE.EMAIL_VERIFIED,{},
-        SWAGGER_RESPONSE[0].code))}
+        STATUS_CODE.OK))}
     })
 
 };
@@ -67,43 +69,47 @@ var clickToVerify = function(token,callbackUserRegister)
  *                                   USER LOGIN
  * --------------------------------------------------------------------------------
  * */
-var userLoginLogic = function(name,password,callbackUserLogin) {
-    var encryptedPassword = CONFIG.CRYPTO.encrypt(password);
+var userLoginLogic = function(payload,callbackUserLogin) {
+    var encryptedPassword = CONFIG.CRYPTO.encrypt(payload.password);
     async.waterfall([
         function(callback){
             Service.crudQueries.findOneWithLimit(MODEL.userDetailsModel,
-                {name : name, password:encryptedPassword,isVerified : true, isDeleted:false},{},{lean:true},
+                {name : payload.name, password:encryptedPassword,isVerified : true, isDeleted:false},{_id : 1},{lean:true},
                 function(err,result) {
                     if (err) {
                         return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
-                            SWAGGER_RESPONSE[6].code));
+                            STATUS_CODE.SERVER_ERROR));
                     }
                     else {
-                        if(result)
+                        if(result.length){
                             return callback(null,result);
+
+                        }
                         else
                         {
-                            return callback(responseObject(ERROR_RESPONSE.ACCESS_DENIED,result,
-                                SWAGGER_RESPONSE[3].code));}
+                            return callback(responseObject(ERROR_RESPONSE.ACCESS_DENIED,{},
+                                STATUS_CODE.UNAUTHORIZED));}
 
                     }
                 })
         },function(result,callback){
             Service.crudQueries.update(MODEL.userDetailsModel,
-                {name : name, password:encryptedPassword,isVerified : true},
+                {name : payload.name, password:encryptedPassword,isVerified : true},
                 {$set: {loginToken: CONFIG.USER_DATA.cipherToken(result[0]._id)}},
                 function(err,result) {
                     if (err) {
-                        return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
-                            SWAGGER_RESPONSE[6].code));
+                        return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR));
                     }
                     else {
                         if(result.n)
-                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,result,
-                                SWAGGER_RESPONSE[0].code));
+                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,{},
+                                STATUS_CODE.OK));
                         else
+                        {
                             return callback(responseObject(ERROR_RESPONSE.USER_ALREADY_LOGGED_IN,{},
-                                SWAGGER_RESPONSE[5].code));
+                                STATUS_CODE.ALREADY_EXISTS_CONFLICT));
+                        }
 
                     }
                 })
@@ -127,14 +133,14 @@ var userLogoutLogic = function(token,callbackUserLogout){
         function(err,result)
         {
             if(err)
-                return callbackUserLogout (responseObject(SWAGGER_RESPONSE[6].message,{},
-                    SWAGGER_RESPONSE[6].code));
+                return callbackUserLogout (responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                    STATUS_CODE.SERVER_ERROR));
             else{
                 if(result.n)
                 return callbackUserLogout(null,responseObject(SUCCESS_RESPONSE.LOGOUT_SUCCESSFULLY,{},
-                    SWAGGER_RESPONSE[0].code));
+                    STATUS_CODE.OK));
                 return callbackUserLogout(null,responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                SWAGGER_RESPONSE[2].code));
+                STATUS_CODE.UNAUTHORIZED));
             }
         })
 };
@@ -146,14 +152,14 @@ var tweetLogic = function(token,tweet,visibility,callbackUserTweet){
     async.waterfall([
         function(callback)
         {
-            Service.crudQueries.getData(MODEL.userDetailsModel,
+            Service.crudQueries.findOneWithLimit(MODEL.userDetailsModel,
                 {loginToken : token},
                 {_id:1},
                 {lean : true},
                 function(err,result) {
                     if (err) {
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                        SWAGGER_RESPONSE[6].code));
+                        STATUS_CODE.SERVER_ERROR));
                     }
                     else {
                         if (result.length){
@@ -161,7 +167,7 @@ var tweetLogic = function(token,tweet,visibility,callbackUserTweet){
                     }
                         else
                             callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                            SWAGGER_RESPONSE[3].code));
+                            STATUS_CODE.UNAUTHORIZED));
                     }
                 })
         },
@@ -174,9 +180,10 @@ var tweetLogic = function(token,tweet,visibility,callbackUserTweet){
             }, function(err,result){
                 if(err)
                 callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                    SWAGGER_RESPONSE[6].code));
+                    STATUS_CODE.SERVER_ERROR));
                 else
-                    callback(null,result);
+                    callback(null,responseObject(SUCCESS_RESPONSE.TWEETED,tweet,
+                        STATUS_CODE.CREATED));
             })
         }
     ], function (err, result) {
@@ -184,11 +191,10 @@ var tweetLogic = function(token,tweet,visibility,callbackUserTweet){
             return callbackUserTweet(err);
         }
         else {
-            return callbackUserTweet(null,responseObject(SUCCESS_RESPONSE.TWEETED,tweet,
-            SWAGGER_RESPONSE[1].code));
+            return callbackUserTweet(null,result);
         }
     })
-}
+};
 /*--------------------------------------------------------------------------------
  *                                   DISPLAY TWEETS
  * --------------------------------------------------------------------------------
@@ -201,12 +207,12 @@ var displayTweets = function(token,field,callbackDisplayRoute)
         {
             Service.crudQueries.getData(MODEL.userDetailsModel,
                 {loginToken : token},
-                {},
+                {_id:1,following:1},
                 {lean : true},
                 function(err,result){
                 if(err) {
                     callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                    SWAGGER_RESPONSE[6].code));
+                    STATUS_CODE.SERVER_ERROR));
                 }
                 else
                 {
@@ -218,7 +224,7 @@ var displayTweets = function(token,field,callbackDisplayRoute)
                     else
                     {
                         callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                        SWAGGER_RESPONSE[4].code))
+                        STATUS_CODE.UNAUTHORIZED))
                     }
                 }
             })
@@ -232,10 +238,10 @@ var displayTweets = function(token,field,callbackDisplayRoute)
                 {path:'id',select:'name'},function(err,result){
                     if(err)
                     callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                    SWAGGER_RESPONSE[6].code));
+                    STATUS_CODE.SERVER_ERROR));
                     else
-                    callback(null,responseObject(SWAGGER_RESPONSE[0].message,result,
-                    SWAGGER_RESPONSE[0].code));
+                    callback(null,responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE,result,
+                    STATUS_CODE.OK));
                 })
         }
     ],function(err,result){
@@ -265,15 +271,15 @@ var followSomeoneLogic = function(token,name,callbackfollowSomeone) {
                 if(err)
                 {
                     callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                        SWAGGER_RESPONSE[6].code))
+                        STATUS_CODE.SERVER_ERROR))
                 }
                 else
                 {
                     if(result.length)
                     callback(null,result);
                     else
-                        callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,result,
-                    SWAGGER_RESPONSE[3].code))
+                        callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                    STATUS_CODE.UNAUTHORIZED))
                 }
             })
         },
@@ -285,13 +291,13 @@ var followSomeoneLogic = function(token,name,callbackfollowSomeone) {
                 function(err,result){
                 if(err)
                 callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                    SWAGGER_RESPONSE[6].code))
+                    STATUS_CODE.SERVER_ERROR))
                 else {
                     if(result)
                         callback(null,result)
                     else
-                        callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,result,
-                        SWAGGER_RESPONSE[4].code))
+                        callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
+                        STATUS_CODE.NOT_FOUND))
                 }
             })
         },
@@ -304,10 +310,10 @@ var followSomeoneLogic = function(token,name,callbackfollowSomeone) {
                 function (err, result) {
                 if (err)
                     callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                    SWAGGER_RESPONSE[6].code));
+                    STATUS_CODE.SERVER_ERROR));
                 else {
                     callback(null, responseObject(SUCCESS_RESPONSE.FOLLOWING,name,
-                        SWAGGER_RESPONSE[0].code));
+                        STATUS_CODE.OK));
                 }
             })
         }
@@ -338,7 +344,7 @@ var unfollowSomeoneLogic = function(token,name,callbackunfollowSomeone) {
                     if(err)
                     {
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                        SWAGGER_RESPONSE[6].code))
+                        STATUS_CODE.SERVER_ERROR))
                     }
                     else
                     {
@@ -346,7 +352,7 @@ var unfollowSomeoneLogic = function(token,name,callbackunfollowSomeone) {
                         callback(null,result)
                         else
                         callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                        SWAGGER_RESPONSE[3].code))
+                        STATUS_CODE.UNAUTHORIZED))
                     }
                 })
         },
@@ -358,13 +364,13 @@ var unfollowSomeoneLogic = function(token,name,callbackunfollowSomeone) {
                 function(err,result){
                     if(err)
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                            SWAGGER_RESPONSE[6].code))
+                            STATUS_CODE.SERVER_ERROR))
                     else {
                         if(result.length)
                         callback(null,result)
                         else
                         callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
-                        SWAGGER_RESPONSE[4].code))
+                        STATUS_CODE.NOT_FOUND))
                     }
                 })
         },
@@ -376,10 +382,10 @@ var unfollowSomeoneLogic = function(token,name,callbackunfollowSomeone) {
                 function (err, result) {
                     if (err)
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                            SWAGGER_RESPONSE[6].code));
-                    else {
+                            STATUS_CODE.SERVER_ERROR));
+                    else{
                         callback(null, responseObject(SUCCESS_RESPONSE.UNFOLLOWED,name,
-                        SWAGGER_RESPONSE[0].code));
+                        STATUS_CODE.OK));
                     }
                 })
         }
@@ -408,16 +414,16 @@ var editProfile = function(token,payload,callbackEditProfile){
                 {$set : payload,isVerified:false,token:CONFIG.USER_DATA.cipherToken(payload.email)}, {lean: true}, function (err, result) {
                     if (err)
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                        SWAGGER_RESPONSE[6].code));
+                        STATUS_CODE.SERVER_ERROR));
                     else {
                         if(result.n) {
                             Service.mailVerification.sendLink(payload.email,CONFIG.USER_DATA.cipherToken(payload.email));
-                        callback(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,payload.email,
-                        SWAGGER_RESPONSE[0].code));
+                        callback(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,{},
+                        STATUS_CODE.OK));
                         }
                         else
                         callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                        SWAGGER_RESPONSE[3].code))
+                        STATUS_CODE.UNAUTHORIZED))
                     }
 
                 });
@@ -429,15 +435,15 @@ var editProfile = function(token,payload,callbackEditProfile){
                     {$set : payload},{lean:true}, function(err,result){
                         if (err)
                             callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                                SWAGGER_RESPONSE[6].code));
+                                STATUS_CODE.SERVER_ERROR));
                         else {
                             if(result.n) {
                                 callback(null, responseObject(SUCCESS_RESPONSE.DETAILS_UPDATED,{},
-                                    SWAGGER_RESPONSE[0].code));
+                                    STATUS_CODE.OK));
                             }
                             else
                                 callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                                    SWAGGER_RESPONSE[3].code))
+                                    STATUS_CODE.UNAUTHORIZED))
                         }
                     })
             }
@@ -463,7 +469,7 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
                 function (err, result) {
                     if (err) {
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
-                            CONFIG.CONSTANTS.STATUS_CODE.SERVER_ERROR));
+                            STATUS_CODE.SERVER_ERROR));
                     }
                     else {
                         if (result) {
@@ -471,7 +477,7 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
                         }
                         else {
                             callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
-                                SWAGGER_RESPONSE[4].code))
+                                STATUS_CODE.UNAUTHORIZED))
                         }
                     }
                 })
@@ -485,7 +491,7 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
                     function (err, result) {
                         if (err) {
                             callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
-                                SWAGGER_RESPONSE[6].code));
+                                STATUS_CODE.SERVER_ERROR));
                         }
                         else {
                             if (result) {
@@ -502,7 +508,7 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
                 }
             else {
                 callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
-                    SWAGGER_RESPONSE[4].code))
+                    STATUS_CODE.UNAUTHORIZED))
 
             }
         }],
@@ -515,17 +521,17 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
                 function (err, result) {
                     if (err) {
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
-                            SWAGGER_RESPONSE[6].code));
+                            STATUS_CODE.SERVER_ERROR));
                     }
                     else {
                         if (result) {
                             callback(null, responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE,{USER_DETAILS: userInfo,
                                 TWEETS : result},
-                                SWAGGER_RESPONSE[0].code));
+                                STATUS_CODE.OK));
                         }
                         else {
                             callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
-                                SWAGGER_RESPONSE[4].code))
+                                STATUS_CODE.UNAUTHORIZED))
                         }
                     }
                 })
@@ -540,6 +546,271 @@ var seeProfile = function(token,name,callbackDisplayRoute) {
     })
 };
 /*--------------------------------------------------------------------------------
+ *                                   RE_TWEET
+ * --------------------------------------------------------------------------------
+ **/
+var re_TweetLogic = function(token,payload,callbackRoute) {
+    var visibility = payload.visibility,
+        tweetid = payload.tweetid;
+
+    async.auto({
+        authorize:  function (callback) {
+            Service.crudQueries.findOneWithLimit(MODEL.userDetailsModel,
+                {loginToken: token},
+                {_id: 1},
+                {lean: true},
+                function (err, result) {
+                    if (err) {
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                            STATUS_CODE.SERVER_ERROR));
+                    }
+                    else {
+                        if (result.length) {
+                            callback(null, result);
+                        }
+                        else {
+                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                                STATUS_CODE.UNAUTHORIZED))
+                        }
+                    }
+                })
+        },
+        findTweet: ['authorize',function (callback,result) {
+                //console.log(result);
+                Service.crudQueries.findOneWithLimit(MODEL.twitterModel,
+                    {_id : tweetid},
+                    {_id:1,tweet:1},
+                    {lean: true},
+                    function (err, result) {
+                        if (err) {
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                                STATUS_CODE.SERVER_ERROR));
+                        }
+                        else {
+
+                            if (result.length) {
+                                callback(null,result);
+                            }
+                            else {
+                                callback(responseObject(ERROR_RESPONSE.TWEET_NOT_FOUND, {},
+                                    STATUS_CODE.NOT_FOUND))
+                            }
+                        }
+                    })
+        }],
+        reTweet: ['authorize','findTweet', function (callback, result) {
+            Service.crudQueries.saveData(MODEL.twitterModel,{
+                //_id: result.findTweet[0]._id,
+                id : result.authorize[0]._id,
+                tweet : result.findTweet[0].tweet,
+                visibility: visibility,
+                timestamp :Date.now(),
+                reTweetedFrom : result.findTweet[0].id
+                },
+                function (err, result) {
+                    if (err) {
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                            STATUS_CODE.SERVER_ERROR));
+                    }
+                    else {
+                        if (result) {
+                            callback(null, responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE,{},
+                                STATUS_CODE.OK));
+                        }
+                        else {
+                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                                STATUS_CODE.UNAUTHORIZED))
+                        }
+                    }
+                })
+        }]
+    }, function (err, result) {
+        if (err) {
+            return callbackRoute(err)
+        }
+        else {
+            return callbackRoute(null, result.reTweet)
+        }
+    })
+};
+/*--------------------------------------------------------------------------------
+ *                                   LIKE_TWEET
+ * --------------------------------------------------------------------------------
+ **/
+var likeTweet = function(token,tweetid,callbackRoute) {
+    async.auto({
+        authorize:  function (callback) {
+            Service.crudQueries.findOneWithLimit(MODEL.userDetailsModel,
+                {loginToken: token},
+                {_id: 1},
+                {lean: true},
+                function (err, result) {
+                    if (err) {
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                            STATUS_CODE.SERVER_ERROR));
+                    }
+                    else {
+                        if (result) {
+                            callback(null, result);
+                        }
+                        else {
+                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                                STATUS_CODE.UNAUTHORIZED))
+                        }
+                    }
+                })
+        },
+        addToLikeArray: ['authorize',function (callback,result) {
+            if(result.authorize.length){
+                Service.crudQueries.update(MODEL.twitterModel,
+                    {_id : tweetid},
+                    {$addToSet : {likedBy : result.authorize[0]._id}},
+                    {lean: true},
+                    function (err, result) {
+                        if (err) {
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                                STATUS_CODE.SERVER_ERROR));
+                        }
+                        else {
+                           callback(null,result);
+                        }
+                    })
+            }
+            else {
+                callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                    STATUS_CODE.UNAUTHORIZED))
+
+            }
+        }],
+        ifAlreadyLiked: ['authorize','addToLikeArray', function (callback, result) {
+            if(result.addToLikeArray.modified == 1){
+                callback(null,responseObject(SUCCESS_RESPONSE.LIKED,{},
+                    STATUS_CODE.OK));
+            }
+            else{
+                Service.crudQueries.update(MODEL.twitterModel,
+                    {_id: tweetid},
+                    {$pull : { likedBy : result.authorize[0]._id}},
+                    {lean : true},
+                    function (err, result) {
+                        if (err) {
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                                STATUS_CODE.SERVER_ERROR));
+                        }
+                        else {
+                            if (result) {
+                                callback(null, responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE, {},
+                                    STATUS_CODE.OK));
+                            }
+                            else {
+                                callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                                    STATUS_CODE.UNAUTHORIZED))
+                            }
+                        }
+                    })
+            }
+
+        }]
+    }, function (err, result) {
+        if (err) {
+            return callbackRoute(err)
+        }
+        else {
+            return callbackRoute(null, result.addToLikeArray)
+        }
+    })
+};
+
+/*--------------------------------------------------------------------------------
+ *                                   UPLOAD PIC
+ * --------------------------------------------------------------------------------
+ **/
+var uploadPic = function(token,file,callbackRoute) {
+    var data = file;
+    if (data.hapi.headers['content-type'].split("/")[0] == 'image') {
+        var name = data.hapi.filename;
+        var path='/home/anmol/Documents/uploaded_images/'+name;
+        var newFile = fs.createWriteStream(path);
+        data.pipe(newFile);
+        //newFile.on('error', function (err) {
+        //    console.error('pussy')
+        //});
+        //
+        //data.file.pipe(newFile);
+        //
+        //data.file.on('end', function (err) {
+        //    var ret = {
+        //        filename: data.file.hapi.filename,
+        //        headers: data.file.hapi.headers
+        //    };
+        //    reply(JSON.stringify(ret));
+        //})
+    Service.crudQueries.update(MODEL.userDetailsModel,
+        {loginToken: token, isDeleted: false},
+        {$set: {profilePic: path}},
+        {lean: true},
+        function (err, result) {
+            if (err)
+                return callbackRoute(responseObject(SWAGGER_RESPONSE[6].message, {},
+                    STATUS_CODE.SERVER_ERROR));
+            else {
+                if (result.n)
+                    return callbackRoute(null, responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE, {},
+                        STATUS_CODE.OK));
+                return callbackRoute(null, responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                    STATUS_CODE.UNAUTHORIZED));
+            }
+        })
+    }
+    else
+    {
+        return callbackRoute(responseObject(ERROR_RESPONSE.I))
+    }
+};
+
+/*--------------------------------------------------------------------------------
+ *                                   DISPLAY TWEET COUNT
+ * --------------------------------------------------------------------------------
+ **/
+var displayTweetCount = function(token,dates,callbackRoute)
+{
+    async.waterfall([
+        function(callback)
+        {
+            Service.crudQueries.getCount(MODEL.userDetailsModel,
+                {loginToken : token , timestamp : {$gte : dates.fromDate , $lte : dates.toDate}},
+                function(err,result){
+                    if(err) {
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR));
+                    }
+                    else
+                    {
+
+                        if(result)
+                        {
+                            callback(null,result);
+                        }
+                        else
+                        {
+                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                                STATUS_CODE.UNAUTHORIZED))
+                        }
+                    }
+                })
+        }
+    ],function(err,result){
+        if(err)
+        {
+            return callbackRoute(err)
+        }
+        else
+        {
+            return callbackRoute(null,result)
+        }
+    })
+}
+/*--------------------------------------------------------------------------------
  *                                   EXPORTS
  * --------------------------------------------------------------------------------
  **/
@@ -553,5 +824,9 @@ module.exports = {
     followSomeoneLogic : followSomeoneLogic,
     unfollowSomeoneLogic : unfollowSomeoneLogic,
     editProfile:editProfile,
-    seeProfile:seeProfile
+    seeProfile:seeProfile,
+    displayTweetCount : displayTweetCount,
+    uploadPic : uploadPic,
+    re_TweetLogic : re_TweetLogic,
+    likeTweet : likeTweet
 }

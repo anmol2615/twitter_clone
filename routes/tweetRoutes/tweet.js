@@ -5,7 +5,7 @@ var Joi = require('joi'),
 
 var userTweet = {
     method : 'POST',
-    path : '/Tweet',
+    path : '/twitter/Tweet',
     handler : function(request,reply) {
         controller.tweetLogic(request.headers.auth,request.payload.tweet,request.payload.visibility,
             function(err,result){
@@ -35,10 +35,15 @@ var userTweet = {
             //}
             //}
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }}
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : Joi.string()
+            }
+        }
 
     }
 }

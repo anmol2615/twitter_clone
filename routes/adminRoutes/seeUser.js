@@ -33,11 +33,41 @@ var seeUserRoute = {
                 name: Joi.string().required()
             }
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }}
+        response : {
+            options: {
+                allowUnknown: true
+            },
+            schema: {
+                message: Joi.string().required(),
+                data: Joi.object().keys({
+                    USER_INFO: Joi.object().required().keys({
+                        _id : Joi.any(),
+                        name : Joi.string(),
+                        email : Joi.string(),
+                        timeOfRegistration : Joi.date(),
+                        phoneNo  : Joi.string(),
+                        token : Joi.string(),
+                        following : Joi.array(),
+                        followers : Joi.array(),
+                        isVerifiied : Joi.boolean(),
+                        isDeleted : Joi.boolean(),
+                        loginToken : Joi.string()
+                    }),
+                    TWEETS : Joi.array().items(
+                        Joi.object().keys({
+                            id: Joi.object(),
+                            visibility: Joi.string(),
+                            isTweetDeleted : Joi.boolean(),
+                            tweet : Joi.string(),
+                            likedBy : Joi.array(),
+                            timestamp : Joi.date(),
+                            reTweetedFrom : Joi.array()
 
+                        } )
+                    )
+                })
+            }
+        }
     }
 };
 

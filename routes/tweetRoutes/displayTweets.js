@@ -5,7 +5,7 @@ var controller = require('../../Controllers/userController');
 
 var displayTweets = {
     method:'GET',
-    path:'/Display_Tweets/{auth}/{field}',
+    path:'/twitter/Display_Tweets/{auth}/{field}',
     config:
     {
         tags:['api'],
@@ -16,10 +16,24 @@ var displayTweets = {
                 field : Joi.string().required().allow('Ascending','Descending')
             }
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }}
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : Joi.array().items(
+                    Joi.object().keys({
+                        id : Joi.object().keys({
+                            _id : Joi.any(),
+                            name : Joi.string()
+                        }),
+                        tweet : Joi.string(),
+                        timestamp : Joi.date()
+                    })
+                )
+            }
+        }
     },
     handler:function(request,reply)
     {

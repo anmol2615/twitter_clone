@@ -1,13 +1,16 @@
+/**
+ * Created by anmol on 2/15/16.
+ */
 'use strict';
 
 var Joi = require('joi'),
     controller = require('../../Controllers/userController');
 
-var editProfileRoute = {
+var likeTweet = {
     method : 'PUT',
-    path : '/user/edit',
+    path : '/twitter/like',
     handler : function(request,reply) {
-        controller.editProfile(request.headers.auth,request.payload,
+        controller.re_TweetLogic(request.headers.auth,request.payload,
             function(err,result){
                 if(err)
                 {
@@ -26,11 +29,13 @@ var editProfileRoute = {
                 auth : Joi.string().required()
             }).options({ allowUnknown: true }),
             payload: {
-                name: Joi.string(),
-                password : Joi.string(),
-                email :  Joi.string(),
-                phoneNo: Joi.string()
+                tweetid: Joi.string().required()
             }
+            //,
+            //failAction :{ function(request,reply,source,error){
+            //    console.log('hello');
+            //}
+            //}
         },
         response : {
             options : {
@@ -43,8 +48,8 @@ var editProfileRoute = {
         }
 
     }
-};
+}
 
 module.exports = [
-    editProfileRoute
+    likeTweet
 ]

@@ -8,9 +8,9 @@ var Joi = require('joi'),
 
 var loginRoute = {
     method:'POST',
-    path:'/v1/Login',
+    path:'/user/Login',
     handler : function(request,reply) {
-        controller.userLoginLogic(request.payload.name, request.payload.password, function (err, result) {
+        controller.userLoginLogic(request.payload, function (err, result) {
             if(err)
             {
                 reply(err.response).code(err.statusCode);
@@ -29,10 +29,15 @@ var loginRoute = {
                 password : Joi.string().required().description("PASSWORD")
             }
         },
-        plugins:{
-            'hapi-swagger':{
-            payloadType:"form"
-        }}
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : {}
+            }
+        }
 
     }
 }

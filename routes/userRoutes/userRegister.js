@@ -1,16 +1,17 @@
 'use strict';
 
 var Joi = require('joi'),
-    controller = require('../../Controllers/userController');
+    controller = require('../../Controllers/userController'),
+    CONFIG = require('../../Config');
 
 var registerRoute = {
     method:'POST',
-    path:'/v1/register',
+    path:'/user/register',
     handler : function (request,reply)
     {
         controller.userRegistrationLogic(request.payload.name , request.payload.password,request.payload.email,request.payload.phoneNo,function(err,result){
             if(err)
-            reply(err.response).code(error.statusCode);
+            reply(err.response).code(err.statusCode);
             else
             reply(result.response).code(result.statusCode);
         });
@@ -24,11 +25,24 @@ var registerRoute = {
                 password : Joi.string().required(),
                 phoneNo : Joi.string().required()
 
+            },
+            failAction : function(request,reply,source,error){
+                reply()
+            }
+
+        },
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : {}
             }
         },
         plugins:{
             'hapi-swagger':{
-                payloadType:"form"
+                responses : CONFIG.USER_DATA.toObject(CONFIG.RESPONSE_MESSAGES.SWAGGER_DEFAULT_RESPONSE_MESSAGES)
             }},
     }
 };

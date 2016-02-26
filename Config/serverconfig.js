@@ -3,9 +3,8 @@
  */
 
 const PORT = {
-    LIVE : 8000,
-    TEST : 8888,
-    DEMO : 8088
+
+    LIVE : 8055
 };
 module.exports = {
     PORT : PORT

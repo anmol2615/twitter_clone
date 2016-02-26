@@ -35,15 +35,15 @@ var adminRegister = function(name,password,email,phoneNo,scope,callbackAdminRegi
         if(err){
             if(err.code === 11000) {
                 return callbackAdminRegister(responseObject(ERROR_RESPONSE.USERNAME_ALREADY_EXISTS,
-                    result,SWAGGER_RESPONSE[5].code))
+                    {},STATUS_CODE.ALREADY_EXISTS_CONFLICT))
             }
             return callbackAdminRegister(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                SWAGGER_RESPONSE[6].code));
+                STATUS_CODE.SERVER_ERROR));
         }
         else {
             Service.mailVerification.sendLink(email,CONFIG.USER_DATA.cipherToken(email),scope);
             return callbackAdminRegister(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,
-                {},SWAGGER_RESPONSE[1].code));
+                {},STATUS_CODE.OK));
         }
     })
 };
@@ -55,12 +55,11 @@ var clickToVerify = function(token,callbackAdminRegister)
     Service.crudQueries.getOneData(MODEL.adminModel,{token : token},{$set : {isVerified:true}},{lean:true},function(err, result){
         if(err)
             return callbackAdminRegister(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                SWAGGER_RESPONSE[6].code));
+                STATUS_CODE.SERVER_ERROR));
         else
         {
-            console.log(result);
             return callbackAdminRegister(null,responseObject(SUCCESS_RESPONSE.EMAIL_VERIFIED,{},
-                SWAGGER_RESPONSE[0].code))}
+                STATUS_CODE.OK))}
     })
 
 };
@@ -76,8 +75,8 @@ var adminLoginLogic = function(name,password,callbackAdminLogin) {
                 {adminName : name, password:encryptedPassword,isVerified : true},{_id:1},{lean:true},
                 function(err,result) {
                     if (err) {
-                        return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
-                            SWAGGER_RESPONSE[6].code));
+                        return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR));
                     }
                     else {
                         if(result)
@@ -85,7 +84,7 @@ var adminLoginLogic = function(name,password,callbackAdminLogin) {
                         else
                         {
                             return callback(responseObject(ERROR_RESPONSE.ACCESS_DENIED,result,
-                                SWAGGER_RESPONSE[3].code));}
+                                STATUS_CODE.UNAUTHORIZED));}
 
                     }
                 })
@@ -95,16 +94,16 @@ var adminLoginLogic = function(name,password,callbackAdminLogin) {
                 {$set: {loginToken: CONFIG.USER_DATA.cipherToken(result[0]._id)}},
                 function(err,result) {
                     if (err) {
-                        return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
-                            SWAGGER_RESPONSE[6].code));
+                        return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR));
                     }
                     else {
                         if(result.n)
-                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,result,
-                                SWAGGER_RESPONSE[0].code));
+                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,{},
+                                STATUS_CODE.OK));
                         else
                             return callback(responseObject(ERROR_RESPONSE.USER_ALREADY_LOGGED_IN,{},
-                                SWAGGER_RESPONSE[5].code));
+                                STATUS_CODE.ALREADY_EXISTS_CONFLICT));
 
                     }
                 })
@@ -126,14 +125,14 @@ var adminLogoutLogic = function(token,callbackLogoutLogic){
         function(err,result)
         {
             if(err)
-                return callbackLogoutLogic (responseObject(SWAGGER_RESPONSE[6].message,{},
-                    SWAGGER_RESPONSE[6].code));
+                return callbackLogoutLogic (responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                    STATUS_CODE.SERVER_ERROR));
             else{
                 if(result.n)
                     return callbackLogoutLogic(null,responseObject(SUCCESS_RESPONSE.LOGOUT_SUCCESSFULLY,{},
-                        SWAGGER_RESPONSE[0].code));
+                        STATUS_CODE.OK));
                 return callbackLogoutLogic(null,responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                    SWAGGER_RESPONSE[2].code));
+                    STATUS_CODE.UNAUTHORIZED));
             }
         })
 };
@@ -152,7 +151,7 @@ var seeUserProfile = function(token,name,callbackRoute)
                 function(err,result){
                     if(err) {
                         callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                            SWAGGER_RESPONSE[6].code));
+                            STATUS_CODE.SERVER_ERROR));
                     }
                     else
                     {
@@ -164,7 +163,7 @@ var seeUserProfile = function(token,name,callbackRoute)
                         else
                         {
                             callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                                SWAGGER_RESPONSE[4].code))
+                                STATUS_CODE.UNAUTHORIZED))
                         }
                     }
                 })
@@ -245,12 +244,12 @@ var editUserProfile = function(token,payload,callbackEditProfile){
                     {$set : payload,isVerified:false,token:CONFIG.USER_DATA.cipherToken(payload.email)}, {lean: true}, function (err, result) {
                         if (err)
                             callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                                SWAGGER_RESPONSE[6].code));
+                                STATUS_CODE.SERVER_ERROR));
                         else {
                             if(result.n) {
                                 Service.mailVerification.sendLink(payload.email,CONFIG.USER_DATA.cipherToken(payload.email));
-                                callback(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,payload.email,
-                                    SWAGGER_RESPONSE[0].code));
+                                callback(null, responseObject(SUCCESS_RESPONSE.REGISTRATION_SUCCESSFUL,{},
+                                    STATUS_CODE.OK));
                             }
                             else
                                 callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
@@ -266,11 +265,11 @@ var editUserProfile = function(token,payload,callbackEditProfile){
                     {$set : payload},{lean:true}, function(err,result){
                         if (err)
                             callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                                SWAGGER_RESPONSE[6].code));
+                                STATUS_CODE.SERVER_ERROR));
                         else {
                             if(result.n) {
                                 callback(null, responseObject(SUCCESS_RESPONSE.DETAILS_UPDATED,{},
-                                    SWAGGER_RESPONSE[0].code));
+                                    STATUS_CODE.CREATED));
                             }
                             else
                                 callback(responseObject(ERROR_RESPONSE.USER_NOT_FOUND,{},
@@ -301,7 +300,7 @@ var deleteTweet = function(token,tweetId,callbackRoute)
                     function(err,result){
                         if(err) {
                             callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                                SWAGGER_RESPONSE[6].code));
+                                STATUS_CODE.SERVER_ERROR));
                         }
                         else
                         {
@@ -314,7 +313,7 @@ var deleteTweet = function(token,tweetId,callbackRoute)
                             else
                             {
                                 callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                                    SWAGGER_RESPONSE[4].code))
+                                    STATUS_CODE.UNAUTHORIZED))
                             }
                         }
                     })
@@ -372,7 +371,7 @@ var deleteUser = function(token,name,callbackRoute)
                     function(err,result){
                         if(err) {
                             callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                                SWAGGER_RESPONSE[6].code));
+                                STATUS_CODE.SERVER_ERROR));
                         }
                         else
                         {
@@ -385,7 +384,7 @@ var deleteUser = function(token,name,callbackRoute)
                             else
                             {
                                 callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
-                                    SWAGGER_RESPONSE[4].code))
+                                    STATUS_CODE.UNAUTHORIZED))
                             }
                         }
                     })
@@ -403,7 +402,7 @@ var deleteUser = function(token,name,callbackRoute)
                             {
                                 if(result)
                                 {
-                                    callback(null,responseObject(SUCCESS_RESPONSE.DELETED,result,
+                                    callback(null,responseObject(SUCCESS_RESPONSE.DELETED,{},
                                         STATUS_CODE.OK));
                                 }
                                 else
@@ -472,6 +471,62 @@ var deleteUser = function(token,name,callbackRoute)
             }
         })
 };
+/*---------------------------------------------------------------
+*                        NO OF USERS REGISTERED
+* ---------------------------------------------------------------
+* */
+var getUserCount = function(token,dates,callbackRoute)
+{
+    async.waterfall([
+        function(callback)
+        {
+            Service.crudQueries.findOneWithLimit(MODEL.adminModel,
+                {loginToken : token},
+                {_id:1},
+                {lean : true},
+                function(err,result){
+                    if(err) {
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR));
+                    }
+                    else
+                    {
+
+                        if(result.length)
+                        {
+                            callback(null,result);
+                        }
+                        else
+                        {
+                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS,{},
+                                STATUS_CODE.UNAUTHORIZED))
+                        }
+                    }
+                })
+        },
+        function(result,callback){
+            Service.crudQueries.getCount(MODEL.userDetailsModel,
+                {timeOfRegistration : {$gte : dates.fromDate , $lte : dates.toDate}},
+                function(err,result){
+                    if(err)
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                            STATUS_CODE.SERVER_ERROR));
+                    else
+                        callback(null,responseObject(SWAGGER_RESPONSE[0].message,result,
+                            STATUS_CODE.OK));
+                })
+        }
+    ],function(err,result){
+        if(err)
+        {
+            return callbackRoute(err)
+        }
+        else
+        {
+            return callbackRoute(null,result)
+        }
+    })
+};
 module.exports = {
     adminRegister: adminRegister,
     clickToVerify : clickToVerify,
@@ -480,5 +535,6 @@ module.exports = {
     seeUserProfile : seeUserProfile,
     deleteTweet: deleteTweet,
     deleteUser:deleteUser,
-    editUserProfile : editUserProfile
+    editUserProfile : editUserProfile,
+    getUserCount : getUserCount
 };

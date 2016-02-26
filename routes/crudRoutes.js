@@ -19,23 +19,23 @@ var route1 = {
 
 };
 
-//ROUTE 2
-var route2 = {
-  method: 'GET',
-  path:'/user/{name}',
-  handler: function (request, reply) {
-
-     return reply('hello ' + encodeURIComponent(request.params.name));
-  },
-  config : {
-    validate : {
-      params : {
-        name : Joi.string().min(5).required()
-      }
-    }
-  }
-
-};
+////ROUTE 2
+//var route2 = {
+//  method: 'GET',
+//  path:'/{name}',
+//  handler: function (request, reply) {
+//
+//     return reply('hello ' + encodeURIComponent(request.params.name));
+//  },
+//  config : {
+//    validate : {
+//      params : {
+//        name : Joi.string().min(5).required()
+//      }
+//    }
+//  }
+//
+//};
 
 var route3 = {
   method:'POST',
@@ -148,4 +148,4 @@ var route6 = {
   }
 };
 
-module.exports=[route1,route2,route3,route4,route5,route6]
+module.exports=[route1,route3,route4,route5,route6]

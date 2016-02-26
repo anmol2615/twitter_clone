@@ -30,10 +30,15 @@ var adminRegisterRoute = {
 
             }
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }},
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : {}
+            }
+        }
     }
 };
 var clickToVerify = {

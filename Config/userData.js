@@ -15,6 +15,14 @@ var responseObject = function(message,data,code){
     },
     statusCode: code})
 };
+
+var toObject = function (arr) {
+    var rv = {};
+    for (var i = 0; i < arr.length; ++i)
+        rv[arr[i].code] = {description : arr[i].message};
+    return rv;
+};
+
 var cipherToken = function (tokenData) {
     return jwt.sign(tokenData, PRIVATE_KEY);
 };
@@ -29,15 +37,17 @@ var adminVerify = 'admin_verify';
 const ADMIN_CLASS = {
     ADMIN : 'admin',
     SUPER_ADMIN : 'superAdmin'
-}
+};
 module.exports = {
     cipherToken: cipherToken,
     decipherToken: decipherToken,
     PRIVATE_KEY : PRIVATE_KEY,
     id : id,
+    imagePath : '../images',
     isLoggedIn : isLoggedIn,
     verifyLink : verifyLink,
     options : options,
+    toObject : toObject,
     responseObject : responseObject,
     ADMIN_CLASS: ADMIN_CLASS,
     adminVerify : adminVerify

@@ -29,6 +29,15 @@ var deleteTweetRoute = {
                 auth : Joi.string().required(),
                 tweetId: Joi.string().required()
             }
+        },
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : {}
+            }
         }
     }
 };

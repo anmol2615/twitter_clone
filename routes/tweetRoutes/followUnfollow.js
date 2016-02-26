@@ -5,7 +5,7 @@ var Joi = require('joi'),
 
 var follow = {
     method : 'PUT',
-    path : '/Follow',
+    path : '/twitter/Follow',
     handler : function(request,reply) {
         controller.followSomeoneLogic(request.payload.auth,request.payload.name,function(err,result){
             if(err)
@@ -26,16 +26,21 @@ var follow = {
                 name: Joi.string().required()
             }
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }}
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : Joi.string()
+            }
+        }
     }
 }
 
 var unfollow = {
     method : 'PUT',
-    path : '/unfollow',
+    path : '/user/unfollow',
     handler : function(request,reply) {
         controller.unfollowSomeoneLogic(request.payload.auth,request.payload.name,function(err,result){
             if(err)
@@ -56,10 +61,15 @@ var unfollow = {
                 name: Joi.string().required()
             }
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }}
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : Joi.string()
+            }
+        }
     }
 }
 module.exports = [

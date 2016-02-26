@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var seeProfileRoute = {
     method : 'GET',
-    path : '/seeProfile/{name}',
+    path : '/user/seeProfile/{name}',
     handler : function(request,reply) {
         controller.seeProfile(request.headers.auth,request.params.name,
             function(err,result){
@@ -32,10 +32,30 @@ var seeProfileRoute = {
                 name: Joi.string()
             }
         },
-        plugins:{
-            'hapi-swagger':{
-                payloadType:"form"
-            }}
+        response : {
+            options : {
+                allowUnknown : true
+            },
+            schema : {
+                message : Joi.string().required(),
+                data : Joi.object().keys({
+                    USER_DETAILS : Joi.object().keys({
+                        _id : Joi.any(),
+                        following : Joi.array(),
+                        followers : Joi.array(),
+                        noOfFollowing : Joi.number(),
+                        noOfFollowers : Joi.number()
+                    }),
+                    TWEETS : Joi.array().items(
+                       Joi.object().keys({
+                           id : Joi.any(),
+                           tweet : Joi.string(),
+                           timestamp : Joi.date()
+                       })
+                    )
+                })
+            }
+        }
 
     }
 };

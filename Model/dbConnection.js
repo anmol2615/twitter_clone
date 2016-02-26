@@ -4,7 +4,7 @@
 var mongoose = require( 'mongoose' );
 
 // Build the connection string
-var dbURI = 'mongodb://localhost/data';
+var dbURI = 'mongodb://localhost/twitter_2';
 
 // Create the database connection
 mongoose.connect(dbURI);
@@ -22,6 +22,7 @@ mongoose.connection.on('error',function (err) {
 
 // When the connection is disconnected
 mongoose.connection.on('disconnected', function () {
+
     console.log('Mongoose default connection disconnected');
 });
 
