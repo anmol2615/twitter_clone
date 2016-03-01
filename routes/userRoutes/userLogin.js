@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var loginRoute = {
     method:'POST',
-    path:'/user/Login',
+    path:'/API/v1/user/Login',
     handler : function(request,reply) {
         controller.userLoginLogic(request.payload, function (err, result) {
             if(err)
@@ -35,7 +35,7 @@ var loginRoute = {
             },
             schema : {
                 message : Joi.string().required(),
-                data : {}
+                data : Joi.string()
             }
         }
 

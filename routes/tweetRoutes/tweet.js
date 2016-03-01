@@ -5,7 +5,7 @@ var Joi = require('joi'),
 
 var userTweet = {
     method : 'POST',
-    path : '/twitter/Tweet',
+    path : '/API/v1/twitter/Tweet',
     handler : function(request,reply) {
         controller.tweetLogic(request.headers.auth,request.payload.tweet,request.payload.visibility,
             function(err,result){

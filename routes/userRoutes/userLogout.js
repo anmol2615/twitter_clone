@@ -5,7 +5,7 @@ var Joi = require('joi'),
 
 var logoutRoute = {
     method : 'GET',
-    path : '/user/logout/{token}',
+    path : '/API/v1/user/logout/{token}',
     handler : function (request,reply)
     {
         controller.userLogoutLogic(request.params.token,function(err,result){

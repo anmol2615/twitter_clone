@@ -9,11 +9,18 @@ var mongoose = require('mongoose');
 var dbConnection = require('./Model/dbConnection');
 const server = new Hapi.Server();
 
+var PORT = CONFIG.SERVERCONFIG.PORT.LIVE;
+
 //------------------------------------------------
+if (process.env.NODE_ENV === 'TEST') {
+  PORT = CONFIG.SERVERCONFIG.PORT.TEST;
+} else if (process.env.NODE_ENV === 'DEV') {
+  PORT = CONFIG.SERVERCONFIG.PORT.DEV;
+}
+
 // Create a server with a host and port
 server.connection({
-  host: 'localhost',
-  port: CONFIG.SERVERCONFIG.PORT.LIVE
+  port: PORT
 });
 
 //------------------------------------------------------

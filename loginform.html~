@@ -1,0 +1,17 @@
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js">
+</script>
+</head>
+<form id = "form1" >
+  Name: <input type="text" id="name" ><br>
+  Password: <input type="text" id="password"><br>
+<input type = "button" onclick = "getArgFunction()" value = "submit">
+<script>
+var getArgFunction = function (){
+var name = document.getElementById("name")
+alert(name.value)
+}
+</script>
+</form>
+</html>

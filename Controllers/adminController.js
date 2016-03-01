@@ -6,8 +6,7 @@
 var async = require('async'),
     MODEL = require('../Model'),
     CONFIG = require('../Config'),
-    Jwt = require('jsonwebtoken'),
-    orderOfDisplayingTweets = CONFIG.USER_DATA.options,
+    moment = require('moment'),
     responseObject = CONFIG.USER_DATA.responseObject,
     ERROR_RESPONSE = CONFIG.RESPONSE_MESSAGES.ERROR_MESSAGES,
     SUCCESS_RESPONSE = CONFIG.RESPONSE_MESSAGES.SUCCESS_MESSAGES,
@@ -527,6 +526,124 @@ var getUserCount = function(token,dates,callbackRoute)
         }
     })
 };
+
+/*--------------------------------------------------------------------------------
+ *                                   NUMBER OF USERS AT ONCE
+ * --------------------------------------------------------------------------------
+ **/
+var wholeUsersTogether = function(token,callbackRoute) {
+    async.auto({
+        authorize:  function (callback) {
+            Service.crudQueries.findOneWithLimit(MODEL.adminModel,
+                {loginToken: token},
+                {_id: 1},
+                {lean: true},
+                function (err, result) {
+                    if (err) {
+                        callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
+                            STATUS_CODE.SERVER_ERROR));
+                    }
+                    else {
+                        if (result) {
+                            callback(null, result);
+                        }
+                        else {
+                            callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                                STATUS_CODE.UNAUTHORIZED))
+                        }
+                    }
+                })
+        },
+        getUserCount: ['authorize',function (callback,result) {
+            if(result.authorize.length){
+                var currentDate = new Date();
+                Service.crudQueries.aggregateData(MODEL.userDetailsModel,
+                    [
+                        {
+                            $group : {
+                                _id: {
+                                    "day": {
+                                        "$dayOfMonth": "$timeOfRegistration"
+                                    },
+                                    "year": {
+                                        "$year": "$timeOfRegistration"
+                                    },
+                                    "month": {
+                                        "$month": "$timeOfRegistration"
+                                    },
+                                    "week": {
+                                        "$week":"$timeOfRegistration"
+                                    }
+
+                                },
+                                "count": {
+                                    $sum: 1
+                                },
+                                "minDate": {
+                                    $min: "$timeOfRegistration"
+                                }
+                            }
+                        }
+                    ],
+                    function (err, result) {
+                        if (err) {
+                            callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, err,
+                                STATUS_CODE.SERVER_ERROR));
+                        }
+                        else {
+                            var i= 0,
+                                dayCount = 0,
+                                weekCount = 0,
+                                monthCount = 0,
+                                yearCount = 0;
+
+                            while(!!result[i] && result[i].minDate.getFullYear() == currentDate.getFullYear())
+                            {
+                                if(result[i].minDate.getDate() == currentDate.getDate())
+                                {
+                                    dayCount+=result[i].count;
+                                    weekCount = dayCount;
+                                }
+                                else if(result[i]._id.week == moment(currentDate).format('W'))
+                                {
+                                    weekCount+=result[i].count;
+                                    monthCount = weekCount;
+                                }
+                                else if(result[i].minDate.getMonth() == currentDate.getMonth())
+                                {
+                                    monthCount+=result[i].count;
+                                    yearCount = monthCount;
+                                }
+
+                                else if(result[i].minDate.getFullYear() == currentDate.getFullYear())
+                                {
+                                    yearCount += result[i].count;
+                                }
+                                i++;
+                            }
+                            callback(null,responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE,{dayCount : dayCount,
+                                weekCount : weekCount,
+                                monthCount : monthCount,
+                                yearCount : yearCount},
+                                STATUS_CODE.OK));
+                        }
+                    })
+            }
+            else {
+                callback(responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
+                    STATUS_CODE.UNAUTHORIZED))
+            }
+        }]
+    }, function (err, result) {
+        if (err) {
+            return callbackRoute(err)
+        }
+        else {
+            return callbackRoute(null, result.getUserCount)
+        }
+    })
+};
+
 module.exports = {
     adminRegister: adminRegister,
     clickToVerify : clickToVerify,
@@ -536,5 +653,6 @@ module.exports = {
     deleteTweet: deleteTweet,
     deleteUser:deleteUser,
     editUserProfile : editUserProfile,
-    getUserCount : getUserCount
+    getUserCount : getUserCount,
+    wholeUsersTogether : wholeUsersTogether
 };

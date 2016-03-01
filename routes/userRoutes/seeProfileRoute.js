@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var seeProfileRoute = {
     method : 'GET',
-    path : '/user/seeProfile/{name}',
+    path : '/API/v1/user/seeProfile/{name}',
     handler : function(request,reply) {
         controller.seeProfile(request.headers.auth,request.params.name,
             function(err,result){

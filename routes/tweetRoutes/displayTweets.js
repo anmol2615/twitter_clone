@@ -5,7 +5,7 @@ var controller = require('../../Controllers/userController');
 
 var displayTweets = {
     method:'GET',
-    path:'/twitter/Display_Tweets/{auth}/{field}',
+    path:'/API/v1/twitter/Display_Tweets/{auth}/{field}',
     config:
     {
         tags:['api'],

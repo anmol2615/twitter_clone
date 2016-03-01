@@ -3,9 +3,10 @@ var pack = require('../package'),
         info: {
             'title': 'Test API Documentation',
             'version': pack.version,
-        }
+
+        },
         //apiVersion: pack.version,
-        //pathPrefixSize: 3
+        pathPrefixSize: 3
 
     };
 

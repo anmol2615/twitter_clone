@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var likeTweet = {
     method : 'PUT',
-    path : '/twitter/like',
+    path : '/API/v1/twitter/like',
     handler : function(request,reply) {
         controller.re_TweetLogic(request.headers.auth,request.payload,
             function(err,result){

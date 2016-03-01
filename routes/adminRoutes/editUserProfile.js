@@ -9,7 +9,7 @@ var Joi = require('joi'),
 
 var editUserRoute = {
     method : 'PUT',
-    path : '/admin/editUser',
+    path : '/API/v1/admin/editUser',
     handler : function(request,reply) {
         controller.editUserProfile(request.headers.auth,request.payload,
             function(err,result){

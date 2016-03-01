@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var deleteTweetRoute = {
     method : 'DELETE',
-    path : '/admin/deleteTweet',
+    path : '/API/v1/admin/deleteTweet',
     handler : function(request,reply) {
         controller.deleteTweet(request.payload.auth,request.payload.tweetId,
             function(err,result){

@@ -6,7 +6,7 @@ var Joi = require('joi'),
 
 var registerRoute = {
     method:'POST',
-    path:'/user/register',
+    path:'/API/v1/user/register',
     handler : function (request,reply)
     {
         controller.userRegistrationLogic(request.payload.name , request.payload.password,request.payload.email,request.payload.phoneNo,function(err,result){

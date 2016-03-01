@@ -84,12 +84,28 @@ var getDataWithReference = function (model, query, projection, options, collecti
 var getCount = function (model, condition, callback) {
     model.count(condition, function (error, count) {
         if (error) {
-            logger.error("Error Get Count: ", error);
+            console.log("Error Get Count: ", error);
             return callback(error);
         }
         return callback(null, count);
     })
 };
+/*
+ ----------------------------------------
+ AGGREGATE DATA
+ ----------------------------------------
+ */
+var aggregateData = function (model, group, callback) {
+    model.aggregate(group, function (err, data) {
+
+        if (err) {
+            console.log("Aggregate Data", err);
+            return callback(err);
+        }
+        return callback(null, data);
+    });
+};
+
 module.exports = {
     saveData : saveData,
     getData : getData,
@@ -98,5 +114,6 @@ module.exports = {
     findOneWithLimit : findOneWithLimit,
     getOneData : getOneData,
     getCount : getCount,
-    getDataWithReference : getDataWithReference
+    getDataWithReference : getDataWithReference,
+    aggregateData : aggregateData
 }

@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var adminRegisterRoute = {
     method:'POST',
-    path:'/admin/register',
+    path:'/API/v1/admin/register',
     handler : function (request,reply)
     {
         controller.adminRegister(request.payload.name , request.payload.password,request.payload.email,request.payload.phoneNo,request.payload.scope,function(err,result){

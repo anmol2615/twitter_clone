@@ -9,7 +9,7 @@ var Joi = require('joi'),
 
 var reTweetRoute = {
     method : 'POST',
-    path : '/twitter/reTweet',
+    path : '/API/v1/twitter/reTweet',
     handler : function(request,reply) {
         controller.re_TweetLogic(request.headers.auth,request.payload,
             function(err,result){

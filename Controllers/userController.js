@@ -4,7 +4,6 @@ var async = require('async'),
     MODEL = require('../Model'),
     fs= require('fs'),
     CONFIG = require('../Config'),
-    moment = require('moment'),
     orderOfDisplayingTweets = CONFIG.USER_DATA.options,
     responseObject = CONFIG.USER_DATA.responseObject,
     ERROR_RESPONSE = CONFIG.RESPONSE_MESSAGES.ERROR_MESSAGES,
@@ -93,9 +92,10 @@ var userLoginLogic = function(payload,callbackUserLogin) {
                     }
                 })
         },function(result,callback){
+            var auth = CONFIG.USER_DATA.cipherToken(result[0]._id);
             Service.crudQueries.update(MODEL.userDetailsModel,
                 {name : payload.name, password:encryptedPassword,isVerified : true},
-                {$set: {loginToken: CONFIG.USER_DATA.cipherToken(result[0]._id)}},
+                {$set: {loginToken: auth}},
                 function(err,result) {
                     if (err) {
                         return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
@@ -103,7 +103,7 @@ var userLoginLogic = function(payload,callbackUserLogin) {
                     }
                     else {
                         if(result.n)
-                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,{},
+                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,auth,
                                 STATUS_CODE.OK));
                         else
                         {
@@ -809,7 +809,7 @@ var displayTweetCount = function(token,dates,callbackRoute)
             return callbackRoute(null,result)
         }
     })
-}
+};
 /*--------------------------------------------------------------------------------
  *                                   EXPORTS
  * --------------------------------------------------------------------------------

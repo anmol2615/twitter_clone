@@ -4,7 +4,7 @@
 var mongoose = require( 'mongoose' );
 
 // Build the connection string
-var dbURI = 'mongodb://localhost/twitter_2';
+var dbURI = 'mongodb://inter_2:inter_2_pwd@localhost/twitter_2';
 
 // Create the database connection
 mongoose.connect(dbURI);

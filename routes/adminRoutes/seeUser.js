@@ -9,7 +9,7 @@ var Joi = require('joi'),
 
 var seeUserRoute = {
     method : 'GET',
-    path : '/admin/getUser/{name}',
+    path : '/API/v1/admin/getUser/{name}',
     handler : function(request,reply) {
         controller.seeUserProfile(request.headers.auth,request.params.name,
             function(err,result){

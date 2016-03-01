@@ -11,7 +11,7 @@ var Joi = require('joi'),
 
 var picUpload = {
     method: 'POST',
-    path: '/user/uploadImage',
+    path: '/API/v1/user/uploadImage',
     handler: function(request, reply)
     {
 

@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var adminLoginRoute = {
     method:'POST',
-    path:'/admin/Login',
+    path:'/API/v1/admin/Login',
     handler : function(request,reply) {
         controller.adminLoginLogic(request.payload.name, request.payload.password, function (err, result) {
             if(err)

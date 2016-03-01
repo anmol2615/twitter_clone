@@ -4,7 +4,9 @@
 
 const PORT = {
 
-    LIVE : 8055
+    LIVE : 3006,
+    TEST : 8001,
+    DEV : 8002
 };
 module.exports = {
     PORT : PORT

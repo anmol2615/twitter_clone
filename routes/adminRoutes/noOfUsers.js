@@ -8,7 +8,7 @@ var Joi = require('joi'),
 
 var noOfUsers = {
     method:'GET',
-    path:'/admin/noOfUsers/{fromDate}/{toDate}',
+    path:'/API/v1/admin/noOfUsers/{fromDate}/{toDate}',
     handler : function (request,reply)
     {
         controller.getUserCount(request.headers.auth , request.params,function(err,result){

@@ -20,6 +20,7 @@ module.exports=[
     require('./adminRoutes/adminLogoutRoute'),
     require('./adminRoutes/seeUser'),
     require('./adminRoutes/deleteTweetRoute'),
+    require('./adminRoutes/allUsersTogether'),
     require('./adminRoutes/deleteUserRoute'),
     require('./adminRoutes/editUserProfile')
 ];

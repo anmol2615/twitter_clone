@@ -1,33 +1,31 @@
 /**
- * Created by anmol on 4/2/16.
+ * Created by anmol on 2/25/16.
  */
 'use strict';
 
 var Joi = require('joi'),
     controller = require('../../Controllers/adminController');
 
-var adminLogoutRoute = {
-    method : 'GET',
-    path : '/API/v1/admin/logout/{token}',
+var allUsersTogether = {
+    method:'GET',
+    path:'/API/v1/admin/countUsers',
     handler : function (request,reply)
     {
-        controller.adminLogoutLogic(request.params.token,function(err,result){
+        controller.wholeUsersTogether(request.headers.auth ,function(err,result){
             if(err)
-            {
                 reply(err.response).code(err.statusCode);
-            }
             else
-            {
                 reply(result.response).code(result.statusCode);
-            }
-        })
+        });
     },
     config:{
-        tags : ['api'],
-        validate :
-        {
-            params:{
-                token: Joi.string().required()
+        tags:['api','register'],
+        validate:{
+            headers : Joi.object({
+                auth : Joi.string().required()
+            }).options({ allowUnknown: true }),
+            failAction : function(request,reply,source,error){
+                reply()
             }
         },
         response : {
@@ -36,12 +34,12 @@ var adminLogoutRoute = {
             },
             schema : {
                 message : Joi.string().required(),
-                data : {}
+                //data : Joi.number()
             }
         }
     }
-}
+};
 
 module.exports = [
-    adminLogoutRoute
-]
+    allUsersTogether
+];

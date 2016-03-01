@@ -8,7 +8,7 @@ var controller = require('../../Controllers/userController');
 
 var countTweet = {
     method:'GET',
-    path:'/countTweet/{auth}/{field}',
+    path:'/API/v1/twitter/countTweet/{auth}/{field}',
     config:
     {
         tags:['api'],

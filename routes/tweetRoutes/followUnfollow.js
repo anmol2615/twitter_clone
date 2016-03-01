@@ -5,7 +5,7 @@ var Joi = require('joi'),
 
 var follow = {
     method : 'PUT',
-    path : '/twitter/Follow',
+    path : '/API/v1/twitter/Follow',
     handler : function(request,reply) {
         controller.followSomeoneLogic(request.payload.auth,request.payload.name,function(err,result){
             if(err)
