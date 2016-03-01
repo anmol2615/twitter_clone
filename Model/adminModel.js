@@ -15,7 +15,7 @@ var adminModel = new mongoose.Schema({
     phoneNo: {type : String},
     token : {type : String},
     scope : {type : String},
-    isVerified :{type:Boolean, default :false},
+    isVerified :{type:Boolean, default :true},
     loginToken : {type:String,unique:true,sparse:true}
 });
 module.exports  = mongoose.model('adminModel', adminModel);

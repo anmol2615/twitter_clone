@@ -14,7 +14,7 @@ var user = new mongoose.Schema({
     phoneNo: {type : String},
     token : {type : String},
     isDeleted : {type: Boolean, default:false},
-    isVerified :{type:Boolean, default :false},
+    isVerified :{type:Boolean, default :true},
     loginToken : {type:String,unique:true,sparse:true},
     followers : {type : Array },
     following : {type : Array }
