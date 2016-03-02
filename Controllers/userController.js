@@ -753,7 +753,8 @@ var uploadPic = function(token,file,callbackRoute) {
     }
     else
     {
-        return callbackRoute(responseObject(ERROR_RESPONSE.I))
+        return callbackRoute(responseObject(ERROR_RESPONSE.IMAGE_FORMAT_NOT_SUPPORTED,{},
+        STATUS_CODE.BAD_REQUEST))
     }
 };
 

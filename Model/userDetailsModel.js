@@ -8,7 +8,7 @@ USER SCHEMA
 var user = new mongoose.Schema({
     name: {type : String,unique:true},
     password: {type : String},
-    profilePic : {type: String},
+    profilePic : {type: String ,default : null},
     email: {type :String},
     timeOfRegistration : {type : Date},
     phoneNo: {type : String},
