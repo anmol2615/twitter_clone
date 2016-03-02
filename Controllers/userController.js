@@ -3,6 +3,7 @@
 var async = require('async'),
     MODEL = require('../Model'),
     fs= require('fs'),
+    path = require('path'),
     CONFIG = require('../Config'),
     orderOfDisplayingTweets = CONFIG.USER_DATA.options,
     responseObject = CONFIG.USER_DATA.responseObject,
@@ -729,8 +730,9 @@ var uploadPic = function(token,file,callbackRoute) {
     var data = file;
     if (data.hapi.headers['content-type'].split("/")[0] == 'image') {
         var name = data.hapi.filename;
-        var path='/home/anmol/Documents/uploaded_images/'+name;
-        var newFile = fs.createWriteStream(path);
+        var storePath = '__dirname/uploadImages'+name;
+        console.log(storePath);
+        var newFile = fs.createWriteStream(storePath);
         data.pipe(newFile);
         //newFile.on('error', function (err) {
         //    console.error('pussy')

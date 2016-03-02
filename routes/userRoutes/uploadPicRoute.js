@@ -47,7 +47,11 @@ var picUpload = {
                 message : Joi.string().required(),
                 data : {}
             }
-        }
+        },
+        plugins:{
+            'hapi-swagger':{
+                payloadType:"form"
+            }}
     }
 };
 
