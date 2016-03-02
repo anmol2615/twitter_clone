@@ -99,6 +99,7 @@ const SUCCESS_MESSAGES = {
     'REGISTRATION_SUCCESSFUL': 'You are Registered successfully. Click on the link in the mail to verify.',
     'JOB_POST_SUCCESSFUL': 'Job posted successfully.',
     'EMAIL_SENT': 'Email sent successfully.',
+    'IMAGE_UPLOADED' : 'Image uploaded successfully.',
     'TWEETED':'Tweeted.',
     'LIKED' : 'You liked the tweet ',
     'DETAILS_UPDATED':'Details updated successfully.',

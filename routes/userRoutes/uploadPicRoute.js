@@ -34,7 +34,7 @@ var picUpload = {
             }
         },
         payload: {
-            maxBytes: 2097152,
+            maxBytes: 4097152,
             output: 'stream',
             parse: true,
             allow : 'multipart/form-data'

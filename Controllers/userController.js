@@ -734,30 +734,17 @@ var uploadPic = function(token,file,callbackRoute) {
         console.log(storePath);
         var newFile = fs.createWriteStream(storePath);
         data.pipe(newFile);
-        //newFile.on('error', function (err) {
-        //    console.error('pussy')
-        //});
-        //
-        //data.file.pipe(newFile);
-        //
-        //data.file.on('end', function (err) {
-        //    var ret = {
-        //        filename: data.file.hapi.filename,
-        //        headers: data.file.hapi.headers
-        //    };
-        //    reply(JSON.stringify(ret));
-        //})
     Service.crudQueries.update(MODEL.userDetailsModel,
         {loginToken: token, isDeleted: false},
-        {$set: {profilePic: path}},
+        {$set: {profilePic: storePath}},
         {lean: true},
         function (err, result) {
             if (err)
-                return callbackRoute(responseObject(SWAGGER_RESPONSE[6].message, {},
+                return callbackRoute(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
                     STATUS_CODE.SERVER_ERROR));
             else {
                 if (result.n)
-                    return callbackRoute(null, responseObject(SUCCESS_RESPONSE.ACTION_COMPLETE, {},
+                    return callbackRoute(null, responseObject(SUCCESS_RESPONSE.IMAGE_UPLOADED, {},
                         STATUS_CODE.OK));
                 return callbackRoute(null, responseObject(ERROR_RESPONSE.INVALID_CREDENTIALS, {},
                     STATUS_CODE.UNAUTHORIZED));
