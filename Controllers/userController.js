@@ -730,7 +730,7 @@ var uploadPic = function(token,file,callbackRoute) {
     var data = file;
     if (data.hapi.headers['content-type'].split("/")[0] == 'image') {
         var name = data.hapi.filename;
-        var storePath = '__dirname/uploadImages'+name;
+        var storePath = path.join(__dirname,'uploadedImages',name);
         console.log(storePath);
         var newFile = fs.createWriteStream(storePath);
         data.pipe(newFile);
