@@ -182,7 +182,7 @@ var tweetLogic = function(token,tweet,visibility,callbackUserTweet){
                 callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
                     STATUS_CODE.SERVER_ERROR));
                 else
-                    callback(null,responseObject(SUCCESS_RESPONSE.TWEETED,tweet,
+                    callback(null,responseObject(SUCCESS_RESPONSE.TWEETED,{tweet_id : result._id , tweet : tweet},
                         STATUS_CODE.CREATED));
             })
         }

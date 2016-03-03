@@ -7,7 +7,8 @@ var saveData = function(model,data,callback){
             console.log('get data',err);
             return callback(err);
         }
-        callback(null,result)
+        callback(null,result);
+
     })
 };
 

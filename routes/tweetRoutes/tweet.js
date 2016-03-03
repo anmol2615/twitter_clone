@@ -41,7 +41,10 @@ var userTweet = {
             },
             schema : {
                 message : Joi.string().required(),
-                data : Joi.string()
+                data : Joi.object().keys({
+                    tweet_id : Joi.any(),
+                    tweet : Joi.string()
+                })
             }
         }
 
