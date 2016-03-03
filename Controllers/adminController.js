@@ -89,7 +89,7 @@ var adminLoginLogic = function(name,password,callbackAdminLogin) {
                 })
         },function(result,callback){
             var auth = CONFIG.USER_DATA.cipherToken(result[0]._id);
-            if(!!result.loginToken){
+            if(!result[0].loginToken){
                 Service.crudQueries.update(MODEL.adminModel,
                     {adminName : name, password:encryptedPassword,isVerified : true},
                     {$set: {loginToken: auth}},
