@@ -17,7 +17,7 @@ var adminLoginRoute = {
             }
             else
             {
-                reply(result.response).code(result.statusCode);
+                reply(result.response).header("token",result.response.data).code(result.statusCode);
             }
         })
     },
@@ -34,8 +34,7 @@ var adminLoginRoute = {
                 allowUnknown : true
             },
             schema : {
-                message : Joi.string().required(),
-                data : {}
+                message : Joi.string().required()
             }
         }
 
