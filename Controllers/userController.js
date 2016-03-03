@@ -74,7 +74,7 @@ var userLoginLogic = function(payload,callbackUserLogin) {
     async.waterfall([
         function(callback){
             Service.crudQueries.findOneWithLimit(MODEL.userDetailsModel,
-                {name : payload.name, password:encryptedPassword,isVerified : true, isDeleted:false},{_id : 1},{lean:true},
+                {name : payload.name, password:encryptedPassword,isVerified : true, isDeleted:false},{_id : 1,loginToken : 1},{lean:true},
                 function(err,result) {
                     if (err) {
                         return callback(responseObject(SWAGGER_RESPONSE[6].message,{},
@@ -83,7 +83,6 @@ var userLoginLogic = function(payload,callbackUserLogin) {
                     else {
                         if(result.length){
                             return callback(null,result);
-
                         }
                         else
                         {
@@ -92,29 +91,29 @@ var userLoginLogic = function(payload,callbackUserLogin) {
 
                     }
                 })
-        },function(result,callback){
+        },function(result,callback) {
             var auth = CONFIG.USER_DATA.cipherToken(result[0]._id);
-            Service.crudQueries.update(MODEL.userDetailsModel,
-                {name : payload.name, password:encryptedPassword,isVerified : true},
+           if(!!result.loginToken) {
+               Service.crudQueries.update(MODEL.userDetailsModel,
+                {name: payload.name, password: encryptedPassword, isVerified: true},
                 {$set: {loginToken: auth}},
-                function(err,result) {
+                function (err, result) {
                     if (err) {
-                        return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                        return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG, {},
                             STATUS_CODE.SERVER_ERROR));
                     }
                     else {
-                        if(result.n)
-                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,auth,
+                        return callback(null, responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY, auth,
                                 STATUS_CODE.OK));
-                        else
-                        {
-                            return callback(responseObject(ERROR_RESPONSE.USER_ALREADY_LOGGED_IN,{},
-                                STATUS_CODE.ALREADY_EXISTS_CONFLICT));
-                        }
-
                     }
-                })
-        }],function(err,result){
+                }
+               )
+        }
+        else {
+               return callback(responseObject(ERROR_RESPONSE.USER_ALREADY_LOGGED_IN, {},
+                   STATUS_CODE.ALREADY_EXISTS_CONFLICT));
+
+        }}],function(err,result){
                 if(err)
                 callbackUserLogin(err);
                 else

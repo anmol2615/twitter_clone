@@ -71,7 +71,7 @@ var adminLoginLogic = function(name,password,callbackAdminLogin) {
     async.waterfall([
         function(callback){
             Service.crudQueries.getData(MODEL.adminModel,
-                {adminName : name, password:encryptedPassword,isVerified : true},{_id:1},{lean:true},
+                {adminName : name, password:encryptedPassword,isVerified : true},{_id:1,loginToken : 1},{lean:true},
                 function(err,result) {
                     if (err) {
                         return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
@@ -82,30 +82,32 @@ var adminLoginLogic = function(name,password,callbackAdminLogin) {
                             return callback(null,result);
                         else
                         {
-                            return callback(responseObject(ERROR_RESPONSE.ACCESS_DENIED,result,
+                            return callback(responseObject(ERROR_RESPONSE.ACCESS_DENIED,{},
                                 STATUS_CODE.UNAUTHORIZED));}
 
                     }
                 })
         },function(result,callback){
-            Service.crudQueries.update(MODEL.adminModel,
-                {adminName : name, password:encryptedPassword,isVerified : true},
-                {$set: {loginToken: CONFIG.USER_DATA.cipherToken(result[0]._id)}},
-                function(err,result) {
-                    if (err) {
-                        return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
-                            STATUS_CODE.SERVER_ERROR));
-                    }
-                    else {
-                        if(result.n)
-                            return callback(null,responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,{},
-                                STATUS_CODE.OK));
-                        else
-                            return callback(responseObject(ERROR_RESPONSE.USER_ALREADY_LOGGED_IN,{},
-                                STATUS_CODE.ALREADY_EXISTS_CONFLICT));
-
-                    }
-                })
+            var auth = CONFIG.USER_DATA.cipherToken(result[0]._id);
+            if(!!result.loginToken){
+                Service.crudQueries.update(MODEL.adminModel,
+                    {adminName : name, password:encryptedPassword,isVerified : true},
+                    {$set: {loginToken: auth}},
+                    function(err,result) {
+                        if (err) {
+                            return callback(responseObject(ERROR_RESPONSE.SOMETHING_WRONG,{},
+                                STATUS_CODE.SERVER_ERROR));
+                        }
+                        else {
+                                return callback(responseObject(SUCCESS_RESPONSE.LOGIN_SUCCESSFULLY,auth,
+                                    STATUS_CODE.OK));
+                        }
+                    })
+            }
+            else {
+                return callback(responseObject(ERROR_RESPONSE.USER_ALREADY_LOGGED_IN,{},
+                    STATUS_CODE.ALREADY_EXISTS_CONFLICT));
+            }
         }],function(err,result){
         if(err)
             callbackAdminLogin(err);
