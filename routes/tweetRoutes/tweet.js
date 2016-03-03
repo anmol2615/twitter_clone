@@ -27,7 +27,7 @@ var userTweet = {
             }).options({ allowUnknown: true }),
             payload: {
                 tweet: Joi.string().min(1).max(160).required(),
-                visibility : Joi.allow('Public','Private').required()
+                visibility : Joi.allow('Public','Private')
             }
             //,
             //failAction :{ function(request,reply,source,error){
