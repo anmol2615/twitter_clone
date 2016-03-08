@@ -233,7 +233,7 @@ var displayTweets = function(token,field,callbackDisplayRoute)
             result[0].following.push(result[0]._id);
             Service.crudQueries.getDataWithReference(MODEL.twitterModel,
                 {id: {$in : result[0].following}},
-                {_id:0,tweet:1,timestamp:1,id:1},
+                {_id:1,tweet:1,timestamp:1,id:1},
                 {lean : true,sort : {timestamp : orderOfDisplayingTweets[field]}},
                 {path:'id',select:'name'},function(err,result){
                     if(err)
